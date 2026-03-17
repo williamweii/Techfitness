@@ -1,0 +1,152 @@
+.container {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    overflow: hidden;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+}
+
+.controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.toggleBtn {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--muted-foreground);
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.toggleBtn.active {
+    background: var(--primary);
+    color: white;
+}
+
+.premiumLock {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: #fbbf24;
+    margin-left: 0.5rem;
+}
+
+.timelineContainer {
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+
+.timelineHeader {
+    display: flex;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.dayColumn {
+    min-width: 50px;
+    text-align: center;
+    flex: 1;
+}
+
+.dayName {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    display: block;
+}
+
+.dayNumber {
+    font-size: 1rem;
+    font-weight: 700;
+    display: block;
+}
+
+.goalRow {
+    position: relative;
+    height: 40px;
+    /* Reduced from 60px */
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.goalBar {
+    position: absolute;
+    height: 32px;
+    background: var(--gradient-primary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 0 0.75rem;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: width 0.2s, left 0.2s;
+}
+
+.goalBar:hover {
+    filter: brightness(1.1);
+    z-index: 10;
+}
+
+.resizeHandle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: col-resize;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.resizeHandle:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.addGoalBtn {
+    width: 100%;
+    padding: 1rem;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: var(--muted-foreground);
+    margin-top: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.addGoalBtn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(192, 38, 211, 0.05);
+}
+
+.emptyState {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+}

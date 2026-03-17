@@ -1,0 +1,154 @@
+.container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at top left, rgba(62, 24, 99, 0.4), transparent 40%),
+        radial-gradient(circle at bottom right, rgba(29, 78, 216, 0.2), transparent 40%);
+    padding: 2rem;
+}
+
+.card {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    width: 100%;
+    max-width: 600px;
+    padding: 2.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.progressBar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 4px;
+    background: var(--primary);
+    transition: width 0.5s ease;
+}
+
+.stepTitle {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.stepDescription {
+    color: var(--muted-foreground);
+    margin-bottom: 2rem;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.optionCard {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid transparent;
+    padding: 1.5rem;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: center;
+}
+
+.optionCard:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.selectedOption {
+    border-color: var(--primary);
+    background: rgba(192, 38, 211, 0.15);
+}
+
+.icon {
+    width: 32px;
+    height: 32px;
+    color: var(--primary);
+}
+
+.label {
+    font-weight: 600;
+    color: var(--foreground);
+}
+
+.inputGroup {
+    margin-bottom: 1.5rem;
+}
+
+.inputLabel {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--foreground);
+}
+
+.input {
+    width: 100%;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input:focus {
+    border-color: var(--primary);
+}
+
+.buttonGroup {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+}
+
+.button {
+    padding: 0.875rem 2rem;
+    border-radius: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+.primaryButton {
+    background: var(--primary);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 14px 0 rgba(192, 38, 211, 0.39);
+}
+
+.primaryButton:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.secondaryButton {
+    background: transparent;
+    color: var(--muted-foreground);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.secondaryButton:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}

@@ -1,0 +1,95 @@
+.container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+
+.info {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    z-index: 2;
+}
+
+.label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.value {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.unit {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    font-weight: 600;
+}
+
+.visual {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    z-index: 2;
+}
+
+.cup {
+    width: 80px;
+    height: 120px;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    border-top: none;
+    border-radius: 0 0 16px 16px;
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.water {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, #3b82f6, #60a5fa);
+    transition: height 0.5s ease;
+}
+
+.controls {
+    width: 100%;
+    z-index: 2;
+}
+
+.btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--foreground);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    background: var(--primary);
+    color: white;
+}

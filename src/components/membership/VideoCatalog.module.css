@@ -1,0 +1,438 @@
+.container {
+    padding: 1.5rem;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.header {
+    margin-bottom: 2rem;
+}
+
+.header h1 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+}
+
+.header p {
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+}
+
+.pricingCard {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.premiumIcon {
+    color: var(--primary);
+}
+
+.plans {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+    align-items: end;
+}
+
+.plan {
+    background: var(--secondary);
+    padding: 1rem 0.5rem;
+    border-radius: 12px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+}
+
+.planName {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+}
+
+.planPrice {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--foreground);
+}
+
+.bestValue {
+    background: var(--gradient-primary);
+    transform: scale(1.1);
+    box-shadow: 0 10px 20px -5px rgba(192, 38, 211, 0.4);
+}
+
+.bestValue .planName,
+.bestValue .planPrice,
+.bestValue .planSavings {
+    color: white;
+}
+
+.badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fbbf24;
+    color: black;
+    font-size: 0.625rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.planSavings {
+    font-size: 0.625rem;
+    opacity: 0.9;
+}
+
+.subscribeBtn {
+    width: 100%;
+    padding: 0.875rem;
+    background: var(--foreground);
+    color: var(--background);
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 0.875rem;
+}
+
+.filterTabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.tab {
+    padding: 6px 16px;
+    border-radius: 20px;
+    background: var(--secondary);
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.active {
+    background: var(--primary);
+    color: white;
+}
+
+.courseList {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.courseCard {
+    padding: 0 !important;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.thumbnailWrapper {
+    position: relative;
+    height: 180px;
+}
+
+.thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.playOverlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px;
+    height: 48px;
+    background: rgba(192, 38, 211, 0.8);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.courseCard:hover .playOverlay {
+    opacity: 1;
+}
+
+.premiumLabel {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--gradient-primary);
+    color: white;
+    font-size: 0.625rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.courseInfo {
+    padding: 1.25rem;
+}
+
+.courseInfo h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.coachLine {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.coachName {
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+}
+
+.rating {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.metaLine {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
+.pupils {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.priceTag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.coachingTeaser {
+    margin-top: 3rem;
+}
+
+.teaserHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.5rem;
+}
+
+.teaserIcon {
+    color: var(--primary);
+}
+
+.coachingTeaser p {
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+    margin-bottom: 1.5rem;
+}
+
+.coachesPreview {
+    display: flex;
+    align-items: center;
+    gap: -10px;
+}
+
+.miniAvatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--card);
+    margin-right: -10px;
+}
+
+.comingSoon {
+    margin-left: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary);
+    font-style: italic;
+}
+
+/* Modal Styles */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    z-index: 2000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.modalContent {
+    width: 100%;
+    max-width: 500px;
+    background: var(--background);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    padding: 1.5rem;
+    position: relative;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.closeBtn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: var(--muted-foreground);
+    background: var(--secondary);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    cursor: pointer;
+}
+
+.videoPlaceholder {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: var(--secondary);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.videoPlaceholder img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.6;
+}
+
+.playBtnLarge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--primary);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 30px rgba(192, 38, 211, 0.4);
+}
+
+.videoDetails h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+}
+
+.videoDetails .coachName {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    margin-bottom: 2rem;
+}
+
+.ratingSystem {
+    background: var(--secondary);
+    padding: 1.5rem;
+    border-radius: 16px;
+    text-align: center;
+}
+
+.ratingSystem p {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.stars {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.starBtn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.starBtn:hover {
+    transform: scale(1.2);
+}
+
+.ratingDisclaimer {
+    font-size: 0.75rem !important;
+    color: var(--muted-foreground);
+    line-height: 1.4;
+    font-weight: 400 !important;
+}
+
+.thanksView {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.successIcon {
+    width: 80px;
+    height: 80px;
+    background: #22c55e;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+.thanksView h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.thanksView p {
+    color: var(--muted-foreground);
+}
