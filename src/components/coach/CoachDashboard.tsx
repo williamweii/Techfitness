@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase, type FitnessProfile, type CoachClient, type Invitation } from '@/lib/supabase';
-import { Copy, Check, Link, Users, Clock, UserCheck, PauseCircle, Plus, X } from 'lucide-react';
+import { Copy, Check, Link, Users, Clock, UserCheck, Plus, X, ChevronRight } from 'lucide-react';
 
 type ClientWithProfile = CoachClient & { fitness_profiles: FitnessProfile };
 type InviteWithUrl = Invitation & { invite_url?: string };
@@ -14,6 +15,7 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
 };
 
 export default function CoachDashboard() {
+  const router = useRouter();
   const [clients, setClients] = useState<ClientWithProfile[]>([]);
   const [invitations, setInvitations] = useState<InviteWithUrl[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,7 +142,11 @@ export default function CoachDashboard() {
               const profile = c.fitness_profiles;
               const badge = STATUS_BADGE[c.status];
               return (
-                <div key={c.id} className="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors">
+                <button
+                  key={c.id}
+                  onClick={() => router.push(`/coach/clients/${c.client_id}`)}
+                  className="w-full flex items-center gap-3 p-4 hover:bg-white/5 transition-colors text-left"
+                >
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                     {profile?.name?.[0]?.toUpperCase() || '?'}
                   </div>
@@ -151,7 +157,8 @@ export default function CoachDashboard() {
                   <span className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${badge.color}`}>
                     {badge.label}
                   </span>
-                </div>
+                  <ChevronRight size={14} className="text-gray-600 flex-shrink-0" />
+                </button>
               );
             })}
           </div>
