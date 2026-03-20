@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Activity, Flame, Clock, Plus, ChevronRight, Droplets, Trophy } from 'lucide-react';
 import styles from './Dashboard.module.css';
 import WaterTracker from './nutrition/WaterTracker';
+import AuthHeader from './ui/AuthHeader';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const ACTIVITY_DATA = [
@@ -29,12 +30,10 @@ export default function Dashboard() {
         <div className={styles.dashboard}>
             <header className={styles.header}>
                 <div>
-                    <h1 className="gradient-text">下午好, 帥氣的訓練者</h1>
-                    <p className={styles.subtitle}>準備好今天的科學化訓練了嗎？</p>
+                    <h1 className="gradient-text">TechFitness</h1>
+                    <p className={styles.subtitle}>科學化健身訓練平台</p>
                 </div>
-                <div className={styles.avatar}>
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Avatar" />
-                </div>
+                <AuthHeader />
             </header>
 
             {/* Main Stats */}
