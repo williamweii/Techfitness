@@ -1,15 +1,12 @@
 import Profile from "@/components/profile/Profile";
 import Navbar from "@/components/ui/Navbar";
-import MetricsForm from "@/components/metrics/MetricsForm";
 
 export default function ProfilePageEntry() {
     return (
-        <>
+        <main className="min-h-screen bg-gray-950 text-white overflow-x-hidden">
             <Profile />
-            <div className="px-4 pb-4 max-w-xl mx-auto">
-                <MetricsForm />
-            </div>
             <Navbar />
-        </>
+        </main>
     );
 }
+

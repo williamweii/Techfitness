@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Settings, LogOut, ChevronRight, MapPin, Calendar, CreditCard, ShieldCheck } from 'lucide-react';
+import { Settings, LogOut, ChevronRight, MapPin, CreditCard, ShieldCheck, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 import styles from './Profile.module.css';
 import ProgressChart from '@/components/ui/ProgressChart';
 import GoalScheduler from './GoalScheduler';
+import MetricsForm from '@/components/metrics/MetricsForm';
 
-export default function ProfilePage() {
+export default function Profile() {
     const [user] = useState({
         name: "Felix Hsu",
         level: "高級訓練者",
@@ -52,6 +53,11 @@ export default function ProfilePage() {
 
                 <GoalScheduler />
 
+                {/* Integrated Metrics Form ensures it sits correctly in the layout without being pushed away */}
+                <div className="mb-8">
+                    <MetricsForm />
+                </div>
+
                 <div className={styles.menuSection}>
                     <h2 className={styles.sectionTitle}>帳戶管理</h2>
                     <div className={styles.menuList}>
@@ -73,8 +79,8 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </section>
-
-            <div style={{ height: '100px' }} />
+            
+            <div className="h-24 w-full" />
         </div>
     );
 }
