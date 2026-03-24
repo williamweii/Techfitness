@@ -44,6 +44,7 @@ export default function GoalScheduler() {
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [endDate, setEndDate] = useState(new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0]);
     const [selectedDefault, setSelectedDefault] = useState<string | null>(null);
+    const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
     const visibleDays = viewMode === 'week' ? 7 : 30;
 
@@ -159,10 +160,7 @@ export default function GoalScheduler() {
                                         left: `${Math.max(0, startOffset) * 70}px`,
                                         width: `${Math.min(duration, visibleDays - startOffset) * 70}px`
                                     }}
-                                    onClick={() => {
-                                        const newTitle = prompt(`修改 "${goal.title}" 名稱`, goal.title);
-                                        if (newTitle) setGoals(goals.map(g => g.id === goal.id ? { ...g, title: newTitle } : g));
-                                    }}
+                                    onClick={() => setEditingGoal(goal)}
                                 >
                                     {goal.title}
                                     {isPremium && <div className={styles.resizeHandle} />}
@@ -275,12 +273,77 @@ export default function GoalScheduler() {
                         </div>
                     </div>
                 </div>
-            ) : (
-                <button className={styles.addGoalBtn} onClick={() => setShowAddForm(true)}>
-                    <Plus size={16} className="mx-auto mb-1" />
-                    新增目標
-                </button>
+            ) : null}
+
+            {editingGoal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setEditingGoal(null)}>
+                    <div className="bg-zinc-900/90 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative overflow-hidden backdrop-blur-xl" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                            <div className="p-1.5 bg-purple-500/20 rounded-lg">
+                                <Calendar size={18} className="text-purple-400" />
+                            </div>
+                            編輯目標
+                        </h3>
+                        
+                        <div className="mb-4 relative group">
+                            <label className="text-xs text-zinc-400 mb-2 pl-1 block font-medium tracking-wide">目標名稱</label>
+                            <input
+                                type="text"
+                                className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-4 py-3.5 text-sm text-white focus:border-purple-500/50 focus:bg-purple-500/10 outline-none transition-all"
+                                value={editingGoal.title}
+                                onChange={e => setEditingGoal({...editingGoal, title: e.target.value})}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mb-8">
+                            <div className="relative group">
+                                <label className="text-xs text-zinc-400 mb-2 pl-1 block font-medium tracking-wide">開始日期</label>
+                                <input
+                                    type="date"
+                                    className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-4 py-3 text-sm text-white focus:border-purple-500/50 focus:bg-purple-500/10 outline-none transition-all"
+                                    value={editingGoal.startDate}
+                                    style={{ colorScheme: 'dark' }}
+                                    onChange={e => setEditingGoal({...editingGoal, startDate: e.target.value})}
+                                />
+                            </div>
+                            <div className="relative group">
+                                <label className="text-xs text-zinc-400 mb-2 pl-1 block font-medium tracking-wide">結束日期</label>
+                                <input
+                                    type="date"
+                                    className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-4 py-3 text-sm text-white focus:border-purple-500/50 focus:bg-purple-500/10 outline-none transition-all"
+                                    value={editingGoal.endDate}
+                                    style={{ colorScheme: 'dark' }}
+                                    onChange={e => setEditingGoal({...editingGoal, endDate: e.target.value})}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <button 
+                                className="w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white p-3.5 rounded-2xl font-bold shadow-[0_0_20px_rgba(192,38,211,0.2)] transition-all"
+                                onClick={() => {
+                                    setGoals(goals.map(g => g.id === editingGoal.id ? editingGoal : g));
+                                    setEditingGoal(null);
+                                }}
+                            >儲存變更</button>
+                            <button 
+                                className="w-full bg-red-500/10 text-red-400 hover:bg-red-500/20 p-3.5 rounded-2xl font-bold transition-all"
+                                onClick={() => {
+                                    if(confirm('確定要刪除此目標嗎？')) {
+                                        setGoals(goals.filter(g => g.id !== editingGoal.id));
+                                        setEditingGoal(null);
+                                    }
+                                }}
+                            >刪除目標</button>
+                            <button className="w-full bg-white/5 hover:bg-white/10 p-3.5 rounded-2xl font-bold transition-colors" onClick={() => setEditingGoal(null)}>取消</button>
+                        </div>
+                    </div>
+                </div>
             )}
+            <button className={styles.addGoalBtn} onClick={() => setShowAddForm(true)}>
+                <Plus size={16} className="mx-auto mb-1" />
+                新增目標
+            </button>
         </div>
     );
 }

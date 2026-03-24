@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Settings, LogOut, ChevronRight, MapPin, CreditCard, ShieldCheck, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 import styles from './Profile.module.css';
@@ -22,7 +23,7 @@ export default function Profile() {
         <div className={styles.container}>
             <header className={styles.header}>
                 <div className={styles.topActions}>
-                    <button className={styles.iconBtn}><Settings size={20} /></button>
+                    <Link href="/settings" className={styles.iconBtn}><Settings size={20} /></Link>
                     <button className={styles.iconBtn}><LogOut size={20} /></button>
                 </div>
 
