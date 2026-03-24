@@ -174,50 +174,63 @@ export default function GoalScheduler() {
             </div>
 
             {showAddForm ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowAddForm(false)}>
-                    <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-xl font-bold mb-4">新增目標</h3>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowAddForm(false)}>
+                    <div className="bg-zinc-900/90 border border-white/10 rounded-3xl p-6 w-full max-w-md shadow-2xl relative overflow-hidden backdrop-blur-xl" onClick={e => e.stopPropagation()}>
+                        {/* Decorative glow */}
+                        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+                        
+                        <div className="flex justify-between items-center mb-6 relative">
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <div className="p-1.5 bg-purple-500/20 rounded-lg">
+                                    <Plus size={18} className="text-purple-400" />
+                                </div>
+                                新增目標
+                            </h3>
+                            <button onClick={() => setShowAddForm(false)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white">
+                                <X size={18} />
+                            </button>
+                        </div>
 
-                        <div className="mb-4">
-                            <label className="text-sm text-gray-400 mb-2 block">目標類型</label>
-                            <div className="grid grid-cols-2 gap-2">
+                        <div className="mb-5 relative">
+                            <label className="text-xs text-zinc-400 mb-2 pl-1 block font-medium tracking-wide">目標類型</label>
+                            <div className="grid grid-cols-2 gap-3">
                                 <button
-                                    className={`p-3 rounded-lg border text-left ${selectedDefault ? 'bg-purple-600 border-purple-500' : 'bg-white/5 border-white/10'}`}
+                                    className={`p-3 rounded-2xl border text-left transition-all duration-300 ${selectedDefault ? 'bg-purple-500/20 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.15)]' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
                                     onClick={() => setSelectedDefault(selectedDefault ? null : DEFAULT_GOALS[0].title)}
                                 >
-                                    <span className="block font-bold">💪 經典計畫</span>
+                                    <span className="block font-bold mt-1">💪 經典計畫</span>
                                 </button>
                                 <button
-                                    className={`p-3 rounded-lg border text-left ${!selectedDefault ? 'bg-purple-600 border-purple-500' : 'bg-white/5 border-white/10'}`}
+                                    className={`p-3 rounded-2xl border text-left transition-all duration-300 ${!selectedDefault ? 'bg-purple-500/20 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.15)]' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
                                     onClick={() => setSelectedDefault(null)}
                                 >
-                                    <span className="block font-bold">✨ 自訂說明</span>
+                                    <span className="block font-bold mt-1">✨ 自訂說明</span>
                                 </button>
                             </div>
                         </div>
 
                         {selectedDefault ? (
-                            <div className="grid grid-cols-1 gap-2 mb-4">
+                            <div className="grid grid-cols-1 gap-2 mb-6">
                                 {DEFAULT_GOALS.map(g => (
                                     <button
                                         key={g.title}
-                                        className={`p-3 rounded-xl border text-left transition-all ${selectedDefault === g.title ? 'bg-gradient-to-r ' + g.color + ' text-white border-transparent' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+                                        className={`px-4 py-3.5 rounded-2xl border text-left transition-all duration-300 ${selectedDefault === g.title ? 'bg-gradient-to-r ' + g.color + ' text-white border-transparent shadow-lg scale-[1.02]' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
                                         onClick={() => setSelectedDefault(g.title)}
                                     >
                                         <div className="flex justify-between items-center">
                                             <span className="font-bold">{g.title}</span>
-                                            <span className="text-xs bg-black/20 px-2 py-1 rounded">{g.defaultWeeks} 週</span>
+                                            <span className="text-xs bg-black/20 px-2.5 py-1 rounded-md font-medium">{g.defaultWeeks} 週</span>
                                         </div>
                                     </button>
                                 ))}
                             </div>
                         ) : (
-                            <div className="mb-4">
-                                <label className="text-sm text-gray-400 mb-2 block">目標名稱</label>
+                            <div className="mb-6 relative group">
+                                <label className="text-xs text-zinc-400 mb-2 pl-1 block font-medium tracking-wide">目標名稱</label>
                                 <input
                                     type="text"
                                     placeholder="例如：準備馬拉松..."
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-purple-500"
+                                    className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-4 py-3.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-purple-500/50 focus:bg-purple-500/10 focus:ring-4 focus:ring-purple-500/10 transition-all duration-300"
                                     value={newTitle}
                                     onChange={(e) => setNewTitle(e.target.value)}
                                     autoFocus
@@ -225,21 +238,23 @@ export default function GoalScheduler() {
                             </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div>
-                                <label className="text-sm text-gray-400 mb-2 block">開始日期</label>
+                        <div className="grid grid-cols-2 gap-4 mb-8">
+                            <div className="relative group">
+                                <label className="text-xs text-zinc-400 mb-2 pl-1 block font-medium tracking-wide">開始日期</label>
                                 <input
                                     type="date"
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm outline-none"
+                                    className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 focus:bg-purple-500/10 transition-all duration-300 color-scheme-dark"
+                                    style={{ colorScheme: 'dark' }}
                                     value={startDate}
                                     onChange={e => setStartDate(e.target.value)}
                                 />
                             </div>
-                            <div>
-                                <label className="text-sm text-gray-400 mb-2 block">結束日期</label>
+                            <div className="relative group">
+                                <label className="text-xs text-zinc-400 mb-2 pl-1 block font-medium tracking-wide">結束日期</label>
                                 <input
                                     type="date"
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm outline-none"
+                                    className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 focus:bg-purple-500/10 transition-all duration-300 color-scheme-dark"
+                                    style={{ colorScheme: 'dark' }}
                                     value={endDate}
                                     onChange={e => setEndDate(e.target.value)}
                                 />
@@ -247,8 +262,16 @@ export default function GoalScheduler() {
                         </div>
 
                         <div className="flex gap-3">
-                            <button className="flex-1 bg-white/5 hover:bg-white/10 p-3 rounded-xl font-bold transition-colors" onClick={() => setShowAddForm(false)}>取消</button>
-                            <button className="flex-1 bg-primary hover:bg-primary/90 p-3 rounded-xl font-bold transition-colors" onClick={handleAddGoal}>建立目標</button>
+                            <button className="flex-1 bg-white/5 hover:bg-white/10 p-3.5 rounded-2xl font-bold transition-colors" onClick={() => setShowAddForm(false)}>
+                                取消
+                            </button>
+                            <button 
+                                className="flex-1 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white p-3.5 rounded-2xl font-bold shadow-[0_0_20px_rgba(192,38,211,0.2)] hover:shadow-[0_0_25px_rgba(192,38,211,0.4)] transition-all duration-300"
+                                onClick={handleAddGoal}
+                                disabled={!newTitle && !selectedDefault}
+                            >
+                                建立目標
+                            </button>
                         </div>
                     </div>
                 </div>

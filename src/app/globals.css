@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   --background: #0a0a0c;
   --foreground: #fcfcfd;
@@ -20,8 +22,8 @@
   --ring: #d946ef;
   --radius: 1rem;
 
-  --glass-bg: rgba(24, 24, 27, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
   --gradient-primary: linear-gradient(135deg, #c026d3 0%, #7c3aed 100%);
   --gradient-surface: linear-gradient(180deg, rgba(24, 24, 27, 0) 0%, rgba(24, 24, 27, 0.8) 100%);
 }
