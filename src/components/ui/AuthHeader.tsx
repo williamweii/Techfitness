@@ -8,26 +8,51 @@ import { LogIn, UserCog, Dumbbell } from 'lucide-react';
 
 export default function AuthHeader() {
   const router = useRouter();
+  const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<FitnessProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setLoading(false); return; }
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+      
+      if (!currentSession) { 
+          setLoading(false); 
+          return; 
+      }
+
       const { data } = await supabase
         .from('fitness_profiles')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('id', currentSession.user.id)
         .single();
-      setProfile(data);
+        
+      if (data) setProfile(data);
       setLoading(false);
+
+      // Auto-redirect from homepage based on role or fallback
+      if (window.location.pathname === '/') {
+        const isCoach = data?.role === 'coach' || data?.role === 'admin';
+        router.push(isCoach ? '/coach' : '/workout');
+      }
     };
+    
     load();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => load());
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          setSession(newSession);
+          load();
+      }
+      if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setProfile(null);
+          setLoading(false);
+      }
+    });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [router]);
 
   const handleSignIn = async () => {
     await supabase.auth.signInWithOAuth({
@@ -38,12 +63,13 @@ export default function AuthHeader() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    setSession(null);
     setProfile(null);
   };
 
   if (loading) return null;
 
-  if (!profile) {
+  if (!session) {
     return (
       <button
         onClick={handleSignIn}
@@ -54,7 +80,9 @@ export default function AuthHeader() {
     );
   }
 
-  const isCoach = profile.role === 'coach' || profile.role === 'admin';
+  const userEmail = profile?.email || session.user.email;
+  const userName = profile?.name || session.user.user_metadata?.name || userEmail;
+  const isCoach = profile?.role === 'coach' || profile?.role === 'admin';
   const dashboardHref = isCoach ? '/coach' : '/workout';
   const dashboardLabel = isCoach ? '教練後台' : '我的訓練';
   const DashIcon = isCoach ? UserCog : Dumbbell;
@@ -72,9 +100,9 @@ export default function AuthHeader() {
       <button
         onClick={handleSignOut}
         className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs hover:opacity-80 transition-opacity"
-        title={`登出 (${profile.email})`}
+        title={`登出 (${userEmail})`}
       >
-        {profile.name?.[0]?.toUpperCase() || profile.email?.[0]?.toUpperCase() || '?'}
+        {userName?.[0]?.toUpperCase() || '?'}
       </button>
     </div>
   );

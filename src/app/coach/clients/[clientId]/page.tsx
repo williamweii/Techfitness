@@ -214,6 +214,32 @@ export default function ClientDetailPage() {
           )}
         </div>
 
+        {/* Raw Metrics List */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden mt-4">
+          <div className="p-4 border-b border-white/5">
+            <h3 className="font-bold text-white text-sm">數據紀錄清單</h3>
+          </div>
+          {metrics.length === 0 ? (
+            <div className="p-6 text-center text-gray-500 text-sm">尚未有量測紀錄</div>
+          ) : (
+            <div className="divide-y divide-white/5 max-h-64 overflow-y-auto">
+              {[...metrics].reverse().map(m => (
+                <div key={m.id} className="p-4 flex justify-between items-start hover:bg-white/5 transition-colors">
+                  <div>
+                    <div className="text-white text-sm font-medium">
+                      體重: {m.weight_kg ?? '--'} kg <span className="text-white/20 mx-1">|</span> 體脂: {m.body_fat_pct ?? '--'}% <span className="text-white/20 mx-1">|</span> 肌肉: {m.muscle_kg ?? '--'} kg
+                    </div>
+                    {m.note && <div className="text-gray-400 text-xs mt-1">備註: {m.note}</div>}
+                  </div>
+                  <div className="text-gray-500 text-xs whitespace-nowrap ml-4">
+                    {new Date(m.recorded_at).toLocaleDateString('zh-TW')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Activity Log */}
         <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
           <div className="p-4 border-b border-white/5">

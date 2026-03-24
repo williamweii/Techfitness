@@ -3,11 +3,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Dumbbell, Utensils, Trophy, PlayCircle, User } from 'lucide-react';
+import { Dumbbell, Utensils, Trophy, PlayCircle, User, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
 import styles from './Navbar.module.css';
 
 const navItems = [
+    { icon: Home,       label: '首頁', href: '/' },
     { icon: Dumbbell,   label: '訓練', href: '/workout' },
     { icon: Utensils,   label: '飲食', href: '/nutrition' },
     { icon: PlayCircle, label: '課程', href: '/videos' },
@@ -25,7 +26,9 @@ export default function Navbar() {
         <nav className={styles.navbar}>
             <div className={styles.container}>
                 {navItems.map((item) => {
-                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                    const isActive = item.href === '/' 
+                        ? pathname === '/' 
+                        : (pathname === item.href || pathname.startsWith(item.href + '/'));
                     return (
                         <Link key={item.href} href={item.href} className={styles.navLink}>
                             <motion.div

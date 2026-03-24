@@ -3,6 +3,7 @@ import "./globals.css";
 import { WorkoutSessionProvider } from "@/lib/WorkoutSessionContext";
 import GlobalTimer from "@/components/workout/GlobalTimer";
 import AICoachChat from "@/components/coach/AICoachChat";
+import Navbar from "@/components/ui/Navbar";
 
 export const metadata: Metadata = {
   title: "FitScientific | 您的科學化健身專家",
@@ -19,6 +20,7 @@ export default function RootLayout({
       <body>
         <WorkoutSessionProvider>
           <main>{children}</main>
+          <Navbar />
           <GlobalTimer />
           <AICoachChat />
         </WorkoutSessionProvider>

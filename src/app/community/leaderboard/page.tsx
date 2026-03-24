@@ -2,8 +2,8 @@ import Leaderboard from '@/components/community/Leaderboard';
 
 export default function LeaderboardPage() {
     return (
-        <div style={{ height: '100%', overflow: 'hidden' }}>
+        <main className="min-h-screen pb-32">
             <Leaderboard />
-        </div>
+        </main>
     );
 }

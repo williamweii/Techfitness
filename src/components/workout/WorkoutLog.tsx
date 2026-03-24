@@ -154,11 +154,11 @@ export default function WorkoutLog() {
                     <ChevronDown size={18} className="text-gray-400" />
 
                     {showPlanMenu && (
-                        <div className="absolute top-full left-0 mt-2 w-64 bg-[#1f2937] border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
+                        <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900/95 backdrop-blur-md border border-white/10 rounded-2xl z-50 overflow-hidden shadow-2xl">
                             {plans.map(plan => (
                                 <div
                                     key={plan}
-                                    className="px-4 py-3 hover:bg-gray-800 text-sm text-gray-300 border-b border-gray-800 last:border-0 text-left"
+                                    className="px-4 py-3 hover:bg-white/10 text-sm text-zinc-200 border-b border-white/5 last:border-0 text-left transition-colors"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         switchPlan(plan);
@@ -168,7 +168,7 @@ export default function WorkoutLog() {
                                 </div>
                             ))}
                             <div
-                                className="px-4 py-3 bg-purple-900/20 text-purple-400 text-sm font-bold hover:bg-purple-900/40 text-left flex items-center gap-2"
+                                className="px-4 py-3 bg-purple-500/10 text-purple-400 text-sm font-bold hover:bg-purple-500/20 text-left flex items-center gap-2 transition-colors"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     alert('即將開放自訂計畫功能');
@@ -310,13 +310,13 @@ export default function WorkoutLog() {
 
                             <div className={styles.inputGroup}>
                                 <label>肌群分類</label>
-                                <select value={newExerciseGroup} onChange={e => setNewExerciseGroup(e.target.value)}>
-                                    <option value="胸">胸</option>
-                                    <option value="背">背</option>
-                                    <option value="腿">腿</option>
-                                    <option value="肩">肩</option>
-                                    <option value="手">手</option>
-                                    <option value="核心">核心</option>
+                                <select value={newExerciseGroup} onChange={e => setNewExerciseGroup(e.target.value)} className="bg-zinc-800 text-white border-white/20">
+                                    <option className="bg-zinc-900 text-white" value="胸">胸</option>
+                                    <option className="bg-zinc-900 text-white" value="背">背</option>
+                                    <option className="bg-zinc-900 text-white" value="腿">腿</option>
+                                    <option className="bg-zinc-900 text-white" value="肩">肩</option>
+                                    <option className="bg-zinc-900 text-white" value="手">手</option>
+                                    <option className="bg-zinc-900 text-white" value="核心">核心</option>
                                 </select>
                             </div>
 

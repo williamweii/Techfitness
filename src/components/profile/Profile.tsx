@@ -8,6 +8,7 @@ import styles from './Profile.module.css';
 import ProgressChart from '@/components/ui/ProgressChart';
 import GoalScheduler from './GoalScheduler';
 import MetricsForm from '@/components/metrics/MetricsForm';
+import HeroRings from './HeroRings';
 
 export default function Profile() {
     const [user] = useState({
@@ -36,16 +37,8 @@ export default function Profile() {
                     <p className={styles.userLevel}>{user.level}</p>
                 </div>
 
-                <div className={styles.quickStats}>
-                    <div className={styles.statItem}>
-                        <span className={styles.statValue}>{user.workouts}</span>
-                        <span className={styles.statLabel}>總訓練數</span>
-                    </div>
-                    <div className={styles.statDivider} />
-                    <div className={styles.statItem}>
-                        <span className={styles.statValue}>{user.streak}</span>
-                        <span className={styles.statLabel}>週連勝</span>
-                    </div>
+                <div className="mt-8 px-2 w-full max-w-[90%] mx-auto">
+                    <HeroRings />
                 </div>
             </header>
 
@@ -54,10 +47,8 @@ export default function Profile() {
 
                 <GoalScheduler />
 
-                {/* Integrated Metrics Form ensures it sits correctly in the layout without being pushed away */}
-                <div className="mb-8">
-                    <MetricsForm />
-                </div>
+                {/* Fixed FAB interaction for daily stats */}
+                <MetricsForm />
 
                 <div className={styles.menuSection}>
                     <h2 className={styles.sectionTitle}>帳戶管理</h2>
