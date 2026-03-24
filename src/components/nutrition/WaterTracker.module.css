@@ -2,41 +2,63 @@
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 1.5rem;
+    padding: 0.75rem;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     position: relative;
     overflow: hidden;
     height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
 }
 
-.info {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    z-index: 2;
-}
-
-.label {
+.header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    color: var(--primary);
-    font-weight: 600;
+    gap: 5px;
+    margin-bottom: 0.2rem;
 }
 
-.value {
-    font-size: 1.25rem;
-    font-weight: 800;
+.icon {
+    color: #7a9e8e;
+    flex-shrink: 0;
 }
 
-.unit {
-    font-size: 0.875rem;
+.titleText {
+    font-size: 0.65rem;
     color: var(--muted-foreground);
     font-weight: 600;
+    white-space: nowrap;
+}
+
+.valueRow {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    margin-bottom: 0.4rem;
+    flex-wrap: nowrap;
+    min-width: 0;
+}
+
+.currentVal {
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #7a9e8e;
+}
+
+.separator {
+    font-size: 0.7rem;
+    color: var(--muted-foreground);
+    margin: 0 1px;
+}
+
+.goalVal {
+    font-size: 0.65rem;
+    color: var(--muted-foreground);
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .visual {
@@ -44,16 +66,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1.5rem;
-    z-index: 2;
+    padding: 0.25rem 0;
+    min-height: 60px;
 }
 
 .cup {
-    width: 80px;
-    height: 120px;
-    border: 3px solid rgba(255, 255, 255, 0.2);
+    width: 52px;
+    height: 80px;
+    border: 2px solid rgba(122, 158, 142, 0.3);
     border-top: none;
-    border-radius: 0 0 16px 16px;
+    border-radius: 0 0 12px 12px;
     position: relative;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.02);
@@ -64,32 +86,52 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(to top, #3b82f6, #60a5fa);
+    background: linear-gradient(to top, #4a8a7a, #7abcac);
     transition: height 0.5s ease;
 }
 
+.wave {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 8px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+}
+
 .controls {
+    display: flex;
+    gap: 0.35rem;
     width: 100%;
-    z-index: 2;
 }
 
 .btn {
-    width: 100%;
-    padding: 0.75rem;
+    flex: 1;
+    padding: 0.45rem 0.2rem;
     background: var(--secondary);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     color: var(--foreground);
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 0.7rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    transition: all 0.2s;
+    gap: 2px;
+    transition: all 0.15s;
+    white-space: nowrap;
 }
 
-.btn:hover {
-    background: var(--primary);
-    color: white;
+.btn:hover, .btn:active {
+    background: rgba(122, 158, 142, 0.25);
+    border-color: rgba(122, 158, 142, 0.4);
+    color: #7abcac;
+}
+
+.btnAccent {
+    background: rgba(122, 158, 142, 0.12);
+    border-color: rgba(122, 158, 142, 0.25);
+    color: #7abcac;
 }

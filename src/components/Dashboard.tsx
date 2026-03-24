@@ -20,9 +20,9 @@ const ACTIVITY_DATA = [
 ];
 
 const DIET_DATA = [
-    { name: 'Protein', value: 140, color: '#c026d3' },
-    { name: 'Carbs', value: 180, color: '#7c3aed' },
-    { name: 'Fat', value: 55, color: '#ec4899' },
+    { name: 'Protein', value: 140, color: '#c4856a' },
+    { name: 'Carbs', value: 180, color: '#7a9e8e' },
+    { name: 'Fat', value: 55, color: '#b8a07a' },
 ];
 
 export default function Dashboard() {
@@ -38,18 +38,18 @@ export default function Dashboard() {
 
             {/* Main Stats */}
             <section className={styles.statsGrid}>
-                <motion.div whileHover={{ scale: 1.02 }} className="card">
+                <motion.div whileHover={{ scale: 1.02 }} className={`card ${styles.statCard}`}>
                     <Activity className={styles.statIcon} />
                     <span className={styles.statLabel}>今日訓練量</span>
                     <span className={styles.statValue}>2,450 kg</span>
                 </motion.div>
-                <motion.div whileHover={{ scale: 1.02 }} className="card">
-                    <Flame className={styles.statIcon} style={{ color: '#ef4444' }} />
-                    <span className={styles.statLabel}>預估消耗熱量</span>
+                <motion.div whileHover={{ scale: 1.02 }} className={`card ${styles.statCard}`}>
+                    <Flame className={styles.statIcon} style={{ color: '#c4856a' }} />
+                    <span className={styles.statLabel}>消耗熱量</span>
                     <span className={styles.statValue}>450 kcal</span>
                 </motion.div>
-                <motion.div whileHover={{ scale: 1.02 }} className="card">
-                    <Clock className={styles.statIcon} style={{ color: '#3b82f6' }} />
+                <motion.div whileHover={{ scale: 1.02 }} className={`card ${styles.statCard}`}>
+                    <Clock className={styles.statIcon} style={{ color: '#7a9e8e' }} />
                     <span className={styles.statLabel}>運動時間</span>
                     <span className={styles.statValue}>48 min</span>
                 </motion.div>

@@ -172,9 +172,8 @@ export default function GoalScheduler() {
             </div>
 
             {showAddForm ? (
-                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowAddForm(false)}>
-                    <div className="bg-zinc-900/95 border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 w-full max-w-md shadow-2xl relative overflow-hidden backdrop-blur-xl max-h-[90dvh] overflow-y-auto pb-safe" onClick={e => e.stopPropagation()}>
-
+                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/85" onClick={() => setShowAddForm(false)}>
+                    <div className="bg-zinc-900 border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 w-full max-w-md shadow-2xl relative overflow-hidden max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         {/* Decorative glow */}
                         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
                         
@@ -277,8 +276,8 @@ export default function GoalScheduler() {
             ) : null}
 
             {editingGoal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setEditingGoal(null)}>
-                    <div className="bg-zinc-900/90 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative overflow-hidden backdrop-blur-xl" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/85" onClick={() => setEditingGoal(null)}>
+                    <div className="bg-zinc-900 border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 w-full max-w-sm shadow-2xl relative overflow-hidden max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                             <div className="p-1.5 bg-purple-500/20 rounded-lg">
                                 <Calendar size={18} className="text-purple-400" />
