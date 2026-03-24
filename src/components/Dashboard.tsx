@@ -60,19 +60,19 @@ export default function Dashboard() {
                 <div className={styles.halfCard}>
                     <WaterTracker />
                 </div>
-                <div className={`${styles.halfCard} card`}>
+                <div className={`${styles.halfCard} card`} style={{ minWidth: 0, overflow: 'hidden' }}>
                     <div className={styles.sectionHeader}>
                         <h3>營養比例</h3>
                         <Link href="/nutrition"><ChevronRight size={16} /></Link>
                     </div>
                     <div className={styles.chartContainer}>
-                        <ResponsiveContainer width="100%" height={160}>
+                        <ResponsiveContainer width="100%" height={140}>
                             <PieChart>
                                 <Pie
                                     data={DIET_DATA}
-                                    innerRadius={50}
-                                    outerRadius={70}
-                                    paddingAngle={5}
+                                    innerRadius={38}
+                                    outerRadius={56}
+                                    paddingAngle={4}
                                     dataKey="value"
                                 >
                                     {DIET_DATA.map((entry, index) => (
@@ -96,6 +96,7 @@ export default function Dashboard() {
                     </div>
                 </div>
             </section>
+
 
             {/* Activity Trend */}
             <section className={styles.section}>

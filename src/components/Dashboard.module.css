@@ -1,6 +1,9 @@
 .dashboard {
-    padding: 1.5rem;
+    padding: 1.25rem;
+    padding-bottom: 2rem;
     max-width: 500px;
+    width: 100%;
+    box-sizing: border-box;
     margin: 0 auto;
 }
 
@@ -169,13 +172,17 @@
 
 .splitSection {
     display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 1rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
     margin-bottom: 2rem;
+    width: 100%;
+    min-width: 0;
 }
 
 .halfCard {
-    height: 100%;
+    min-width: 0;
+    overflow: hidden;
+    width: 100%;
 }
 
 .chartContainer {
