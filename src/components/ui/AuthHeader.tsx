@@ -13,42 +13,46 @@ export default function AuthHeader() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
+    // Restore existing session silently – NO redirect on normal page load
+    const restore = async () => {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       setSession(currentSession);
-      
-      if (!currentSession) { 
-          setLoading(false); 
-          return; 
-      }
+      if (!currentSession) { setLoading(false); return; }
 
       const { data } = await supabase
         .from('fitness_profiles')
         .select('*')
         .eq('id', currentSession.user.id)
         .single();
-        
       if (data) setProfile(data);
       setLoading(false);
-
-      // Auto-redirect from homepage based on role or fallback
-      if (window.location.pathname === '/') {
-        const isCoach = data?.role === 'coach' || data?.role === 'admin';
-        router.push(isCoach ? '/coach' : '/workout');
-      }
     };
-    
-    load();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          setSession(newSession);
-          load();
+    restore();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (event === 'SIGNED_IN') {
+        setSession(newSession);
+        if (!newSession) return;
+        const { data } = await supabase
+          .from('fitness_profiles')
+          .select('*')
+          .eq('id', newSession.user.id)
+          .single();
+        if (data) setProfile(data);
+        setLoading(false);
+        // Only redirect right after OAuth login
+        if (window.location.pathname === '/') {
+          const needsOnboarding = !data?.onboarding_completed;
+          if (needsOnboarding) { router.push('/onboarding'); return; }
+          const isCoach = data?.role === 'coach' || data?.role === 'admin';
+          router.push(isCoach ? '/coach' : '/workout');
+        }
       }
       if (event === 'SIGNED_OUT') {
-          setSession(null);
-          setProfile(null);
-          setLoading(false);
+        setSession(null);
+        setProfile(null);
+        setLoading(false);
       }
     });
     return () => subscription.unsubscribe();

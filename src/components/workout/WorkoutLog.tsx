@@ -54,10 +54,12 @@ export default function WorkoutLog() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [newExerciseName, setNewExerciseName] = useState('');
     const [newExerciseGroup, setNewExerciseGroup] = useState('胸');
-    const [isPremium] = useState(false); // Mock
+    const [isPremium] = useState(false);
+    const [plans, setPlans] = useState(['推拉腿 (推日)', '推拉腿 (拉日)', '推拉腿 (腿日)', '全身訓練 A', '全身訓練 B']);
+    const [renamingPlan, setRenamingPlan] = useState<string | null>(null);
+    const [renameValue, setRenameValue] = useState('');
 
     // Constants and derived state
-    const plans = ['推拉腿 (推日)', '推拉腿 (拉日)', '推拉腿 (腿日)', '全身訓練 A', '全身訓練 B'];
     const customCount = exercises.filter(e => parseInt(e.id) > 100).length;
 
     const handleWorkComplete = (duration: number) => {
@@ -89,7 +91,15 @@ export default function WorkoutLog() {
     const switchPlan = (plan: string) => {
         setCurrentPlanName(plan);
         setShowPlanMenu(false);
-        // In a real app, this would load different exercises
+        setRenamingPlan(null);
+    };
+
+    const handleRename = (oldName: string) => {
+        if (!renameValue.trim()) { setRenamingPlan(null); return; }
+        setPlans(prev => prev.map(p => p === oldName ? renameValue.trim() : p));
+        if (currentPlanName === oldName) setCurrentPlanName(renameValue.trim());
+        setRenamingPlan(null);
+        setRenameValue('');
     };
 
     const toggleSet = (exId: string, setId: string) => {
@@ -141,50 +151,96 @@ export default function WorkoutLog() {
 
     return (
         <div className={styles.container}>
-            {/* ... (Header and GlobalTimer) ... */}
+            {/* Header and GlobalTimer */}
             <div className={styles.globalTimerSection}>
                 <GlobalTimer />
             </div>
             <header className={styles.header}>
                 <div
-                    className="flex items-center gap-2 mb-1 cursor-pointer relative"
-                    onClick={() => setShowPlanMenu(!showPlanMenu)}
+                    className="flex items-center gap-2 mb-1 cursor-pointer"
+                    onClick={() => setShowPlanMenu(true)}
                 >
                     <h1 className="gradient-text">{currentPlanName}</h1>
                     <ChevronDown size={18} className="text-gray-400" />
-
-                    {showPlanMenu && (
-                        <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900/95 backdrop-blur-md border border-white/10 rounded-2xl z-50 overflow-hidden shadow-2xl">
-                            {plans.map(plan => (
-                                <div
-                                    key={plan}
-                                    className="px-4 py-3 hover:bg-white/10 text-sm text-zinc-200 border-b border-white/5 last:border-0 text-left transition-colors"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        switchPlan(plan);
-                                    }}
-                                >
-                                    {plan}
-                                </div>
-                            ))}
-                            <div
-                                className="px-4 py-3 bg-purple-500/10 text-purple-400 text-sm font-bold hover:bg-purple-500/20 text-left flex items-center gap-2 transition-colors"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    alert('即將開放自訂計畫功能');
-                                    setShowPlanMenu(false);
-                                }}
-                            >
-                                <Plus size={14} /> 新增自訂計畫
-                            </div>
-                        </div>
-                    )}
                 </div>
                 <div className={styles.meta}>
                     <span>2026年1月21日</span>
                     <span>下午 4:30</span>
                 </div>
             </header>
+
+            {/* Plan Picker Bottom Sheet */}
+            <AnimatePresence>
+                {showPlanMenu && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-sm flex items-end"
+                        onClick={() => { setShowPlanMenu(false); setRenamingPlan(null); }}
+                    >
+                        <motion.div
+                            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                            className="w-full max-w-md mx-auto bg-zinc-900 border border-white/10 rounded-t-3xl pb-8 overflow-hidden"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="w-10 h-1 bg-zinc-600 rounded-full mx-auto mt-3 mb-4" />
+                            <div className="px-5 pb-2">
+                                <h2 className="text-lg font-bold text-white">選擇訓練計畫</h2>
+                                <p className="text-xs text-zinc-500 mt-0.5">長按或點擊鉛筆圖示可重新命名</p>
+                            </div>
+
+                            <div className="max-h-[55vh] overflow-y-auto">
+                                {plans.map(plan => (
+                                    <div key={plan} className={`flex items-center gap-3 px-5 border-b border-white/6 ${currentPlanName === plan ? 'bg-purple-500/10' : ''}`}>
+                                        {renamingPlan === plan ? (
+                                            <div className="flex-1 flex items-center gap-2 py-3">
+                                                <input
+                                                    autoFocus
+                                                    className="flex-1 bg-zinc-800 border border-purple-500/50 text-white px-3 py-2 rounded-xl text-sm outline-none"
+                                                    value={renameValue}
+                                                    onChange={e => setRenameValue(e.target.value)}
+                                                    onKeyDown={e => { if (e.key === 'Enter') handleRename(plan); if (e.key === 'Escape') setRenamingPlan(null); }}
+                                                    placeholder="新名稱"
+                                                />
+                                                <button onClick={() => handleRename(plan)} className="px-3 py-2 bg-purple-600 text-white text-xs rounded-xl font-bold">儲存</button>
+                                                <button onClick={() => setRenamingPlan(null)} className="px-3 py-2 bg-zinc-700 text-zinc-300 text-xs rounded-xl">取消</button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    className="flex-1 py-4 text-left"
+                                                    onClick={() => switchPlan(plan)}
+                                                >
+                                                    <div className={`font-semibold text-[15px] ${currentPlanName === plan ? 'text-purple-300' : 'text-zinc-100'}`}>{plan}</div>
+                                                </button>
+                                                <button
+                                                    onClick={() => { setRenamingPlan(plan); setRenameValue(plan); }}
+                                                    className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                                                    title="重新命名"
+                                                >
+                                                    ✏️
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                ))}
+                                <button
+                                    className="w-full px-5 py-4 flex items-center gap-3 text-purple-400 font-bold hover:bg-purple-500/10 transition-colors"
+                                    onClick={() => {
+                                        const name = `自訂計畫 ${plans.length + 1}`;
+                                        setPlans(prev => [...prev, name]);
+                                        setRenamingPlan(name);
+                                        setRenameValue(name);
+                                    }}
+                                >
+                                    <Plus size={18} /> 新增計畫
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
 
             <ActiveTimer
                 initialSeconds={90}

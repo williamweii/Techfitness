@@ -1,333 +1,216 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Dumbbell, Activity, Utensils, Target, Check } from 'lucide-react';
-import styles from './Onboarding.module.css';
+import { ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-type OnboardingData = {
-    name: string;
-    experience: 'beginner' | 'intermediate' | 'advanced';
-    frequency: number;
-    goal: string[];
-    focusParts: string[];
-    diet: string;
+type Answers = {
+  role?: string;
+  goal?: string;
+  weekly_frequency?: string;
+  diet_mode?: string;
+  coach_type?: string;
 };
 
-const INITIAL_DATA: OnboardingData = {
-    name: '',
-    experience: 'beginner',
-    frequency: 3,
-    goal: ['muscle'],
-    focusParts: [],
-    diet: 'omnivore',
-};
+const STEPS = [
+  {
+    id: 'role' as const,
+    title: '您的身分是？',
+    subtitle: '幫助我們為您打造最適合的體驗',
+    options: [
+      { value: 'client', emoji: '🏋️', label: '學員 / 自由訓練', desc: '個人健身、訓練計畫追蹤' },
+      { value: 'coach', emoji: '👨‍🏫', label: '我是教練', desc: '管理學員課表與排程' },
+    ],
+  },
+  {
+    id: 'goal' as const,
+    title: '您的主要目標？',
+    subtitle: '我們將為您客製化訓練與飲食計畫',
+    options: [
+      { value: 'fat_loss', emoji: '📉', label: '減脂', desc: '燃燒脂肪，雕塑體型' },
+      { value: 'muscle_gain', emoji: '💪', label: '增肌', desc: '增加肌肉量，提升力量' },
+      { value: 'maintenance', emoji: '🏃', label: '維持健康', desc: '保持體態，維持體能' },
+      { value: 'sport', emoji: '🏆', label: '運動備賽', desc: '專項訓練，提升競技表現' },
+    ],
+    skipIf: (a: Answers) => a.role === 'coach',
+  },
+  {
+    id: 'weekly_frequency' as const,
+    title: '每週打算訓練幾天？',
+    subtitle: '我們會根據頻率幫您安排合適的菜單',
+    options: [
+      { value: '1-2', emoji: '🌱', label: '1–2 天', desc: '輕鬆入門' },
+      { value: '3-4', emoji: '🔥', label: '3–4 天', desc: '規律訓練' },
+      { value: '5+', emoji: '⚡', label: '5 天以上', desc: '高強度衝刺' },
+    ],
+    skipIf: (a: Answers) => a.role === 'coach',
+  },
+  {
+    id: 'diet_mode' as const,
+    title: '飲食追蹤方式？',
+    subtitle: '選擇最適合您的飲食管理模式',
+    options: [
+      { value: 'strict', emoji: '⚖️', label: '嚴格計算', desc: '追蹤卡路里與三大營養素' },
+      { value: 'fasting', emoji: '⏱️', label: '間歇性斷食', desc: '168 斷食，不嚴格算卡' },
+      { value: 'none', emoji: '🧘', label: '自由飲食', desc: '只專注訓練，不紀錄飲食' },
+    ],
+    skipIf: (a: Answers) => a.role === 'coach',
+  },
+  {
+    id: 'coach_type' as const,
+    title: '您的教學模式？',
+    subtitle: '幫助我們設定您的後台功能',
+    options: [
+      { value: 'studio', emoji: '🏢', label: '工作室 / 連鎖駐點', desc: '固定場地教學' },
+      { value: 'freelance', emoji: '🚗', label: '自由跑點', desc: '多地點移動教學' },
+      { value: 'online', emoji: '💻', label: '純線上課表', desc: '遠距課表規劃' },
+    ],
+    skipIf: (a: Answers) => a.role !== 'coach',
+  },
+];
 
 export default function OnboardingWizard() {
-    const router = useRouter();
-    const [step, setStep] = useState(0);
-    const [data, setData] = useState<OnboardingData>(INITIAL_DATA);
+  const router = useRouter();
+  const [answers, setAnswers] = useState<Answers>({});
+  const [stepIndex, setStepIndex] = useState(0);
+  const [saving, setSaving] = useState(false);
 
-    const updateData = (updates: Partial<OnboardingData>) => {
-        setData(prev => ({ ...prev, ...updates }));
-    };
+  const visibleSteps = STEPS.filter(s => !s.skipIf || !s.skipIf(answers));
+  const currentStep = visibleSteps[stepIndex];
+  const totalSteps = visibleSteps.length;
+  const isLast = stepIndex === totalSteps - 1;
+  const progress = Math.round(((stepIndex) / totalSteps) * 100);
+  const selected = currentStep ? answers[currentStep.id] : undefined;
 
-    const nextStep = () => {
-        if (step < 5) setStep(step + 1);
-        else handleSubmit();
-    };
+  const handleSelect = (value: string) => {
+    if (!currentStep) return;
+    setAnswers(prev => ({ ...prev, [currentStep.id]: value }));
+  };
 
-    const prevStep = () => {
-        if (step > 0) setStep(step - 1);
-    };
+  const handleNext = async () => {
+    if (!selected) return;
+    if (isLast) {
+      await save();
+    } else {
+      setStepIndex(i => i + 1);
+    }
+  };
 
-    // ... (existing imports)
+  const handleBack = () => setStepIndex(i => Math.max(0, i - 1));
 
-    const handleSubmit = async () => {
-        try {
-            const { error } = await supabase.from('profiles').update({
-                full_name: data.name,
-                experience_level: data.experience,
-                training_frequency: data.frequency,
-                target_goal: data.goal.join(','),
-                focus_areas: data.focusParts,
-                diet_preference: data.diet,
-                updated_at: new Date().toISOString(),
-            }).eq('id', 'mock-user-id'); // NOTE: In a real app this would use the auth user ID
+  const save = async () => {
+    setSaving(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { router.push('/'); return; }
 
-            if (error) console.error('Supabase update error (expected in mock):', error);
-            console.log('Profile updated successfully');
-            router.push('/');
-        } catch (err) {
-            console.error('Error updating profile:', err);
-            // Fallback for demo if no auth user
-            router.push('/');
-        }
-    };
+    await supabase.from('fitness_profiles').update({
+      role: answers.role === 'coach' ? 'coach' : 'client',
+      goal: answers.goal || null,
+      weekly_frequency: answers.weekly_frequency || null,
+      diet_mode: answers.diet_mode || null,
+      coach_type: answers.coach_type || null,
+      onboarding_completed: true,
+    }).eq('id', session.user.id);
 
-    const progress = ((step + 1) / 6) * 100;
+    router.push(answers.role === 'coach' ? '/coach' : '/workout');
+  };
 
-    return (
-        <div className={styles.container}>
-            <div className={styles.card}>
-                <div className={styles.progressBar} style={{ width: `${progress}%` }} />
+  if (!currentStep) return null;
 
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={step}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        {step === 0 && <StepWelcome name={data.name} onUpdate={updateData} />}
-                        {step === 1 && <StepHabits data={data} onUpdate={updateData} />}
-                        {step === 2 && <StepGoals data={data} onUpdate={updateData} />}
-                        {step === 3 && <StepFocusAreas data={data} onUpdate={updateData} />}
-                        {step === 4 && <StepDiet data={data} onUpdate={updateData} />}
-                        {step === 5 && <StepFinish data={data} />}
-                    </motion.div>
-                </AnimatePresence>
-
-                <div className={styles.buttonGroup}>
-                    {step > 0 ? (
-                        <button className={`${styles.button} ${styles.secondaryButton}`} onClick={prevStep}>
-                            <ArrowLeft size={20} style={{ marginRight: '8px' }} /> Back
-                        </button>
-                    ) : (
-                        <div></div>
-                    )}
-
-                    <button className={`${styles.button} ${styles.primaryButton}`} onClick={nextStep}>
-                        {step === 5 ? 'Start Journey' : 'Next'}
-                        {step !== 5 && <ArrowRight size={20} style={{ marginLeft: '8px' }} />}
-                    </button>
-                </div>
-            </div>
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#0a0a0c]">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <span className="text-2xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            TechFitness
+          </span>
         </div>
-    );
-}
 
-// --- Step Components ---
-
-function StepWelcome({ name, onUpdate }: { name: string, onUpdate: (d: Partial<OnboardingData>) => void }) {
-    return (
-        <div>
-            <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center text-purple-400">
-                    <Activity size={32} />
-                </div>
-            </div>
-            <h2 className={styles.stepTitle}>歡迎來到 FitScience</h2>
-            <p className={styles.stepDescription}>
-                讓我們花一點時間了解您的身體狀況與目標，為您打造專屬的科學化訓練計畫。
-            </p>
-            <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>我們該如何稱呼您？</label>
-                <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => onUpdate({ name: e.target.value })}
-                    placeholder="您的名字或暱稱"
-                    className={styles.input}
-                    autoFocus
-                />
-            </div>
+        {/* Progress */}
+        <div className="mb-6">
+          <div className="flex justify-between text-xs text-zinc-500 mb-2">
+            <span>步驟 {stepIndex + 1} / {totalSteps}</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+              animate={{ width: `${Math.max(progress, 6)}%` }}
+              transition={{ duration: 0.4 }}
+            />
+          </div>
         </div>
-    );
-}
 
-function StepHabits({ data, onUpdate }: { data: OnboardingData, onUpdate: (d: Partial<OnboardingData>) => void }) {
-    const levels = [
-        { id: 'beginner', label: '新手', desc: '剛接觸健身' },
-        { id: 'intermediate', label: '中階', desc: '規律訓練 6 個月以上' },
-        { id: 'advanced', label: '高階', desc: '規律訓練 2 年以上' },
-    ];
-
-    return (
-        <div>
-            <h2 className={styles.stepTitle}>您的運動習慣</h2>
-            <p className={styles.stepDescription}>
-                誠實評估您的經驗水平，有助於我們推薦合適的強度。
-            </p>
-
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep.id}
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.25 }}
+          >
             <div className="mb-6">
-                <label className={styles.inputLabel}>目前的訓練經驗</label>
-                <div className="grid grid-cols-1 gap-3">
-                    {levels.map((level) => (
-                        <div
-                            key={level.id}
-                            className={`${styles.optionCard} ${data.experience === level.id ? styles.selectedOption : ''}`}
-                            onClick={() => onUpdate({ experience: level.id as any })}
-                            style={{ flexDirection: 'row', textAlign: 'left' }}
-                        >
-                            <Dumbbell className={styles.icon} />
-                            <div>
-                                <div className={styles.label}>{level.label}</div>
-                                <div className="text-sm text-gray-400">{level.desc}</div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+              <h1 className="text-2xl font-bold text-white mb-2">{currentStep.title}</h1>
+              <p className="text-zinc-400 text-sm">{currentStep.subtitle}</p>
             </div>
 
-            <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>每週預計運動天數: {data.frequency} 天</label>
-                <input
-                    type="range"
-                    min="1"
-                    max="7"
-                    value={data.frequency}
-                    onChange={(e) => onUpdate({ frequency: parseInt(e.target.value) })}
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
-                />
-                <div className="flex justify-between text-xs text-gray-400 mt-2">
-                    <span>1天</span>
-                    <span>7天</span>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function StepGoals({ data, onUpdate }: { data: OnboardingData, onUpdate: (d: Partial<OnboardingData>) => void }) {
-    const goals = [
-        { id: 'muscle', label: '增肌', icon: Dumbbell },
-        { id: 'fat_loss', label: '減脂', icon: Activity },
-        { id: 'strength', label: '力量', icon: Target },
-        { id: 'health', label: '健康', icon: Activity },
-    ];
-
-    const toggleGoal = (goalId: string) => {
-        const current = data.goal;
-        if (current.includes(goalId)) {
-            // Prevent deselecting if it's the only one
-            if (current.length > 1) {
-                onUpdate({ goal: current.filter(g => g !== goalId) });
-            }
-        } else {
-            onUpdate({ goal: [...current, goalId] });
-        }
-    };
-
-    return (
-        <div>
-            <h2 className={styles.stepTitle}>設定您的目標 (可複選)</h2>
-            <p className={styles.stepDescription}>
-                我們將根據您的目標優化訓練課表與營養建議。
-            </p>
-
-            <div className={styles.grid}>
-                {goals.map((goal) => (
-                    <div
-                        key={goal.id}
-                        className={`${styles.optionCard} ${data.goal.includes(goal.id) ? styles.selectedOption : ''}`}
-                        onClick={() => toggleGoal(goal.id)}
-                    >
-                        <goal.icon className={styles.icon} />
-                        <span className={styles.label}>{goal.label}</span>
+            <div className="flex flex-col gap-3 mb-8">
+              {currentStep.options.map(opt => {
+                const isSelected = selected === opt.value;
+                return (
+                  <motion.button
+                    key={opt.value}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => handleSelect(opt.value)}
+                    className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left w-full ${
+                      isSelected
+                        ? 'border-purple-500 bg-purple-500/10'
+                        : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-600 active:border-zinc-500'
+                    }`}
+                  >
+                    <span className="text-3xl">{opt.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-white text-[15px]">{opt.label}</div>
+                      <div className="text-zinc-400 text-sm mt-0.5">{opt.desc}</div>
                     </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function StepFocusAreas({ data, onUpdate }: { data: OnboardingData, onUpdate: (d: Partial<OnboardingData>) => void }) {
-    const parts = ['胸部', '背部', '腿部', '肩部', '手臂', '核心'];
-
-    const togglePart = (part: string) => {
-        const current = data.focusParts;
-        if (current.includes(part)) {
-            onUpdate({ focusParts: current.filter(p => p !== part) });
-        } else {
-            onUpdate({ focusParts: [...current, part] });
-        }
-    };
-
-    return (
-        <div>
-            <h2 className={styles.stepTitle}>想加強的部位 (多選)</h2>
-            <p className={styles.stepDescription}>
-                選擇您希望重點訓練的部位，我們會為您安排專項強化動作。
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center">
-                {parts.map((part) => (
-                    <button
-                        key={part}
-                        onClick={() => togglePart(part)}
-                        className={`px-4 py-3 rounded-xl text-sm font-medium transition-all ${data.focusParts.includes(part)
-                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50 scale-105'
-                            : 'bg-slate-800 text-gray-400 hover:bg-slate-700'
-                            }`}
-                    >
-                        {part}
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function StepDiet({ data, onUpdate }: { data: OnboardingData, onUpdate: (d: Partial<OnboardingData>) => void }) {
-    const diets = [
-        { id: 'omnivore', label: '無特別限制 (雜食)', desc: '均衡攝取各類食物' },
-        { id: 'eating_out', label: '外食族', desc: '以超商、餐廳為主，便於計算熱量' },
-        { id: 'whole_food', label: '原型食物愛好者', desc: '偏好未經加工的天然食材' },
-        { id: 'vegetarian', label: '蛋奶素', desc: '不吃肉，但吃蛋和奶製品' },
-        { id: 'vegan', label: '純素', desc: '完全不攝取動物性產品' },
-        { id: 'keto', label: '生酮飲食', desc: '高脂肪、極低碳水' },
-    ];
-
-    return (
-        <div>
-            <h2 className={styles.stepTitle}>飲食習慣</h2>
-            <p className={styles.stepDescription}>
-                營養佔健身成果的 70%。了解您的飲食偏好能讓我們計算更精準的營養素。
-            </p>
-
-            <div className="grid grid-cols-1 gap-3">
-                {diets.map((diet) => (
-                    <div
-                        key={diet.id}
-                        className={`${styles.optionCard} ${data.diet === diet.id ? styles.selectedOption : ''}`}
-                        onClick={() => onUpdate({ diet: diet.id as any })}
-                        style={{ flexDirection: 'row', textAlign: 'left', alignItems: 'center' }}
-                    >
-                        <Utensils className={styles.icon} />
-                        <div className="ml-4">
-                            <div className={styles.label}>{diet.label}</div>
-                            <div className="text-sm text-gray-400">{diet.desc}</div>
-                        </div>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                      isSelected ? 'bg-purple-500 border-purple-500' : 'border-zinc-600'
+                    }`}>
+                      {isSelected && <Check size={13} className="text-white" />}
                     </div>
-                ))}
+                  </motion.button>
+                );
+              })}
             </div>
-        </div>
-    );
-}
 
-function StepFinish({ data }: { data: OnboardingData }) {
-    return (
-        <div className="text-center py-8">
-            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center text-green-400 mx-auto mb-6">
-                <Check size={40} />
+            <div className="flex gap-3">
+              {stepIndex > 0 && (
+                <button
+                  onClick={handleBack}
+                  className="flex items-center gap-1.5 px-5 py-3.5 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition-colors font-medium"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+              )}
+              <button
+                onClick={handleNext}
+                disabled={!selected || saving}
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[15px] transition-all ${
+                  selected
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90 active:scale-[0.98]'
+                    : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                }`}
+              >
+                {saving ? '儲存中...' : isLast ? '完成設定 🚀' : '下一步'}
+                {!saving && !isLast && <ChevronRight size={18} />}
+              </button>
             </div>
-            <h2 className={styles.stepTitle}>準備完成！</h2>
-            <p className={styles.stepDescription}>
-                謝謝您，{data.name || '訓練者'}。<br />
-                我們已根據您的 {data.goal.map(g => g === 'muscle' ? '增肌' : g === 'fat_loss' ? '減脂' : '健康').join(' & ')} 目標，
-                為您生成了每週 {data.frequency} 天的科學化訓練課表。
-            </p>
-            <div className="bg-purple-900/30 p-4 rounded-xl text-left inline-block w-full max-w-sm border border-purple-500/30">
-                <h3 className="text-purple-300 font-bold mb-2">您的專屬計畫包含：</h3>
-                <ul className="text-gray-300 space-y-2 text-sm">
-                    <li>• 客製化全身/分部位訓練單</li>
-                    <li>• AI 智能營養攝取建議</li>
-                    <li>• 恢復與睡眠監測建議</li>
-                </ul>
-            </div>
-        </div>
-    );
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </main>
+  );
 }
