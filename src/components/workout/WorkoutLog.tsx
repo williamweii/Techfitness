@@ -23,39 +23,73 @@ interface Exercise {
     sets: ExerciseSet[];
 }
 
+// ─── Default exercises per plan ──────────────────────────────────────────────
+const DEFAULT_PLAN_EXERCISES: Record<string, Exercise[]> = {
+    '推拉腿 (推日)': [
+        { id: 'p-1', name: '啞鈴臥推', group: '胸', sets: [{ id: 'p-1-1', weight: 24, reps: 10, completed: false }, { id: 'p-1-2', weight: 24, reps: 8, completed: false }] },
+        { id: 'p-2', name: '啞鈴上胸臥推', group: '胸', sets: [{ id: 'p-2-1', weight: 20, reps: 10, completed: false }] },
+    ],
+    '推拉腿 (拉日)': [
+        { id: 'q-1', name: '滑輪下拉', group: '背', sets: [{ id: 'q-1-1', weight: 55, reps: 10, completed: false }] },
+        { id: 'q-2', name: '啞鈴划船', group: '背', sets: [{ id: 'q-2-1', weight: 22, reps: 12, completed: false }] },
+    ],
+    '推拉腿 (腿日)': [
+        { id: 'r-1', name: '深蹲', group: '腿', sets: [{ id: 'r-1-1', weight: 60, reps: 10, completed: false }] },
+    ],
+};
+
+const STORAGE_PLANS_KEY = 'tf_workout_plans';
+const STORAGE_EXERCISES_KEY = 'tf_plan_exercises';
+const FREE_EXERCISE_LIMIT = 10;
+
+function loadPlans(): string[] {
+    try {
+        const raw = localStorage.getItem(STORAGE_PLANS_KEY);
+        return raw ? JSON.parse(raw) : ['推拉腿 (推日)', '推拉腿 (拉日)', '推拉腿 (腿日)', '全身訓練 A', '全身訓練 B'];
+    } catch { return ['推拉腿 (推日)', '推拉腿 (拉日)', '推拉腿 (腿日)', '全身訓練 A', '全身訓練 B']; }
+}
+
+function loadPlanExercises(planName: string): Exercise[] {
+    try {
+        const raw = localStorage.getItem(STORAGE_EXERCISES_KEY);
+        const map: Record<string, Exercise[]> = raw ? JSON.parse(raw) : {};
+        return map[planName] ?? DEFAULT_PLAN_EXERCISES[planName] ?? [];
+    } catch { return DEFAULT_PLAN_EXERCISES[planName] ?? []; }
+}
+
+function savePlanExercises(planName: string, exercises: Exercise[]) {
+    try {
+        const raw = localStorage.getItem(STORAGE_EXERCISES_KEY);
+        const map: Record<string, Exercise[]> = raw ? JSON.parse(raw) : {};
+        map[planName] = exercises;
+        localStorage.setItem(STORAGE_EXERCISES_KEY, JSON.stringify(map));
+    } catch { /* noop */ }
+}
+
 export default function WorkoutLog() {
-    const [exercises, setExercises] = useState<Exercise[]>([
-        {
-            id: '1',
-            name: '啞鈴臥推',
-            group: '胸',
-            sets: [
-                { id: '1-1', weight: 24, reps: 10, completed: true },
-                { id: '1-2', weight: 24, reps: 8, completed: false },
-            ]
-        },
-        {
-            id: '2',
-            name: '啞鈴上胸臥推',
-            group: '胸',
-            sets: [
-                { id: '2-1', weight: 20, reps: 10, completed: false }
-            ]
-        }
-    ]);
+    const [plans, setPlans] = useState<string[]>(() => loadPlans());
+    const [currentPlanName, setCurrentPlanName] = useState<string>(() => loadPlans()[0]);
+    const [exercises, setExercises] = useState<Exercise[]>(() => loadPlanExercises(loadPlans()[0]));
 
+    // Persist plans list
+    React.useEffect(() => {
+        localStorage.setItem(STORAGE_PLANS_KEY, JSON.stringify(plans));
+    }, [plans]);
+
+    // Persist exercises for current plan on change
+    React.useEffect(() => {
+        savePlanExercises(currentPlanName, exercises);
+    }, [exercises, currentPlanName]);
+
+    // Remaining UI state
     const [showSummary, setShowSummary] = useState(false);
-
-    // State for navigation and UI
     const [currentExIdx, setCurrentExIdx] = useState(0);
     const [currentSetIdx, setCurrentSetIdx] = useState(0);
     const [showPlanMenu, setShowPlanMenu] = useState(false);
-    const [currentPlanName, setCurrentPlanName] = useState('推拉腿 (推日)');
     const [showAddModal, setShowAddModal] = useState(false);
     const [newExerciseName, setNewExerciseName] = useState('');
     const [newExerciseGroup, setNewExerciseGroup] = useState('胸');
     const [isPremium] = useState(false);
-    const [plans, setPlans] = useState(['推拉腿 (推日)', '推拉腿 (拉日)', '推拉腿 (腿日)', '全身訓練 A', '全身訓練 B']);
     const [renamingPlan, setRenamingPlan] = useState<string | null>(null);
     const [renameValue, setRenameValue] = useState('');
 
@@ -89,15 +123,24 @@ export default function WorkoutLog() {
     };
 
     const switchPlan = (plan: string) => {
+        // Save current plan before switching
+        savePlanExercises(currentPlanName, exercises);
         setCurrentPlanName(plan);
+        setExercises(loadPlanExercises(plan));
+        setCurrentExIdx(0);
+        setCurrentSetIdx(0);
         setShowPlanMenu(false);
         setRenamingPlan(null);
     };
 
     const handleRename = (oldName: string) => {
         if (!renameValue.trim()) { setRenamingPlan(null); return; }
-        setPlans(prev => prev.map(p => p === oldName ? renameValue.trim() : p));
-        if (currentPlanName === oldName) setCurrentPlanName(renameValue.trim());
+        const newName = renameValue.trim();
+        // Migrate stored exercises to new name
+        const savedExs = loadPlanExercises(oldName);
+        savePlanExercises(newName, savedExs);
+        setPlans(prev => prev.map(p => p === oldName ? newName : p));
+        if (currentPlanName === oldName) setCurrentPlanName(newName);
         setRenamingPlan(null);
         setRenameValue('');
     };
@@ -128,6 +171,8 @@ export default function WorkoutLog() {
 
     const handleAddExercise = () => {
         if (!newExerciseName) return;
+        // Free tier limit: max 10 unique exercises
+        if (!isPremium && exercises.length >= FREE_EXERCISE_LIMIT) return;
         const newEx: Exercise = {
             id: String(Date.now()),
             name: newExerciseName,
@@ -174,13 +219,13 @@ export default function WorkoutLog() {
                 {showPlanMenu && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-sm flex items-end"
+                        className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-sm flex items-end justify-center"
                         onClick={() => { setShowPlanMenu(false); setRenamingPlan(null); }}
                     >
                         <motion.div
                             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
                             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                            className="w-full max-w-md mx-auto bg-zinc-900 border border-white/10 rounded-t-3xl pb-8 overflow-hidden"
+                            className="w-[min(100%,480px)] bg-zinc-900 border border-white/10 border-b-0 rounded-t-3xl pb-8 overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="w-10 h-1 bg-zinc-600 rounded-full mx-auto mt-3 mb-4" />

@@ -69,7 +69,7 @@ export default function SettingsPage() {
 
           {/* Hero Profile Card */}
           {profile && (
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/10 p-5 backdrop-blur-xl shadow-xl">
+            <div className="relative rounded-3xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-white/10 p-5 backdrop-blur-xl shadow-xl">
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
               <div className="relative flex items-center gap-4">
                 <div className="relative">
@@ -168,7 +168,7 @@ function InfoTile({ label, value, color }: { label: string; value: string; color
   return (
     <div className="bg-white/4 rounded-xl px-3 py-2">
       <div className="text-[10px] text-zinc-500 font-medium mb-0.5">{label}</div>
-      <div className={`text-sm font-bold ${color} truncate`}>{value}</div>
+      <div className={`text-sm font-semibold ${color} break-words`}>{value}</div>
     </div>
   );
 }
