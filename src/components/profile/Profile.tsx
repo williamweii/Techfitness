@@ -214,7 +214,7 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                             </div>
 
                             {/* Chart card */}
-                            <div className="mx-5 bg-zinc-800/50 border border-white/8 rounded-2xl p-4 mb-4 relative overflow-hidden">
+                            <div className="mx-5 bg-zinc-800/50 border border-white/8 rounded-2xl p-5 mb-4 relative overflow-hidden">
                                 {!isPremium && (
                                     <div className="absolute inset-0 rounded-2xl backdrop-blur-md bg-black/50 z-10 flex flex-col items-center justify-center gap-2">
                                         <Lock size={22} className="text-purple-400" />
@@ -230,7 +230,7 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                                             {delta > 0 ? '↑' : '↓'} {Math.abs(delta)} {activeTab.unit}（本月）
                                         </div>
                                     </div>
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-3 overflow-hidden flex-nowrap">
                                         {data.map((d, i) => (
                                             <div key={i} className="text-center">
                                                 <div className="text-xs font-bold text-zinc-300">{d.value}</div>
@@ -243,12 +243,12 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                             </div>
 
                             {/* Performance placeholders */}
-                            <div className="px-5 grid grid-cols-2 gap-3">
+                            <div className="px-5 grid grid-cols-2 gap-3 pb-6">
                                 {[
                                     { label: '運動表現', emoji: '⚡', desc: '最大力量、體能趨勢', locked: !isPremium },
                                     { label: '飲食表現', emoji: '🥗', desc: '熱量達成率、宏量統計', locked: !isPremium },
                                 ].map(card => (
-                                    <div key={card.label} className="relative bg-zinc-800/50 border border-white/8 rounded-2xl p-3.5 overflow-hidden">
+                                    <div key={card.label} className="relative bg-zinc-800/50 border border-white/8 rounded-2xl p-4 overflow-hidden">
                                         {card.locked && (
                                             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
                                                 <Lock size={16} className="text-zinc-400" />

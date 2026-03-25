@@ -252,7 +252,7 @@ export default function WorkoutLog() {
                         <motion.div
                             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
                             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                            className="w-[min(100%,480px)] bg-zinc-900 border border-white/10 border-b-0 rounded-t-3xl overflow-hidden" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
+                            className="w-[min(100%,480px)] bg-zinc-900 border border-white/10 border-b-0 rounded-t-3xl overflow-hidden pb-28"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="w-10 h-1 bg-zinc-600 rounded-full mx-auto mt-3 mb-4" />
@@ -261,7 +261,7 @@ export default function WorkoutLog() {
                                 <p className="text-xs text-zinc-500 mt-0.5">長按或點擊鉛筆圖示可重新命名</p>
                             </div>
 
-                            <div className="max-h-[50vh] overflow-y-auto pb-20">
+                            <div className="max-h-[50vh] overflow-y-auto pb-24">
                                 {plans.map(plan => (
                                     <div key={plan} className={`flex items-center gap-3 px-5 border-b border-white/6 ${currentPlanName === plan ? 'bg-purple-500/10' : ''}`}>
                                         {renamingPlan === plan ? (
@@ -428,8 +428,7 @@ export default function WorkoutLog() {
                         <motion.div
                             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
                             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                            className="w-[min(100%,520px)] bg-zinc-900 border border-white/10 border-b-0 rounded-t-3xl overflow-hidden"
-                            style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+                            className="w-[min(100%,520px)] bg-zinc-900 border border-white/10 border-b-0 rounded-t-3xl overflow-hidden pb-28"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="w-10 h-1 bg-zinc-600 rounded-full mx-auto mt-3 mb-3" />

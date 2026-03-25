@@ -66,7 +66,7 @@ export default function SettingsPage() {
           )}
         </div>
 
-        <div className="p-5 space-y-6">
+        <div className="p-5 space-y-8">
 
           {/* Hero Profile Card */}
           {profile && (
@@ -179,7 +179,7 @@ function Section({ title, children }: { title?: string; children: React.ReactNod
   return (
     <section>
       {title && (
-        <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 pl-1">{title}</h2>
+        <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 pl-1">{title}</h2>
       )}
       <div className="bg-zinc-900/70 backdrop-blur-sm border border-white/8 rounded-2xl overflow-hidden divide-y divide-white/6">
         {children}
@@ -202,7 +202,7 @@ function SettingsRow({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-white/5 active:bg-white/10 transition-colors text-left"
+      className="w-full flex items-center gap-3 px-5 py-[18px] hover:bg-white/5 active:bg-white/10 transition-colors text-left"
     >
       <div className={`p-2 rounded-xl flex-shrink-0 ${accent ? 'bg-purple-500/15 text-purple-400' : 'bg-white/6 text-zinc-400'}`}>
         {icon}

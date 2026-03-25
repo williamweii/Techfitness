@@ -174,7 +174,7 @@ export default function NutritionTracker() {
                 </>
             ) : (
                 /* ── ANALYTICS TAB ── */
-                <div className="px-3 pb-32 space-y-4 overflow-x-hidden">
+                <div className="px-4 pb-32 space-y-5 overflow-x-hidden">
 
                     {/* ── Macro Stat Cards ── */}
                     <div className="grid grid-cols-3 gap-2 mt-1">
@@ -218,13 +218,13 @@ export default function NutritionTracker() {
                                 <div className="relative">
                                     {/* Target line */}
                                     <div className="absolute left-0 right-0 border-t border-dashed border-purple-500/40 pointer-events-none"
-                                        style={{ bottom: `${(target / max) * 84}px` }}>
+                                        style={{ bottom: `${(target / max) * 100}px` }}>
                                         <span className="absolute -top-4 right-0 text-[9px] text-purple-400">目標</span>
                                     </div>
-                                    <div className="flex items-end gap-1.5 h-[84px]">
+                                    <div className="flex items-end gap-1.5 h-[100px]">
                                         {days.map((d, i) => {
                                             const isToday = i === 6;
-                                            const h = Math.round((cals[i] / max) * 84);
+                                            const h = Math.round((cals[i] / max) * 100);
                                             return (
                                                 <div key={d} className="flex-1 flex flex-col items-center gap-1">
                                                     <div className="w-full rounded-lg transition-all relative overflow-hidden"
@@ -242,9 +242,9 @@ export default function NutritionTracker() {
                     </div>
 
                     {/* ── Weekly Summary ── */}
-                    <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+                    <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
                         <h3 className="text-sm font-semibold text-zinc-200 mb-3">本週攝取總結</h3>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             {[
                                 { label: '卡路里', avg: 2107, target: TARGETS.calories, unit: 'kcal', color: '#c026d3' },
                                 { label: '蛋白質', avg: 142, target: TARGETS.protein, unit: 'g', color: '#7c3aed' },
@@ -254,11 +254,11 @@ export default function NutritionTracker() {
                                 const rate = Math.min(Math.round((r.avg / r.target) * 100), 100);
                                 const good = rate >= 80 && rate <= 115;
                                 return (
-                                    <div key={r.label} className="flex items-center gap-3">
+                                    <div key={r.label} className="flex items-center gap-2 sm:gap-3">
                                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
-                                        <div className="flex-1 text-xs text-zinc-300">{r.label}</div>
-                                        <div className="text-xs text-zinc-500">{r.avg}{r.unit}</div>
-                                        <div className="w-20">
+                                        <div className="flex-1 text-xs text-zinc-300 truncate">{r.label}</div>
+                                        <div className="text-xs text-zinc-500 whitespace-nowrap">{r.avg}{r.unit}</div>
+                                        <div className="w-16 sm:w-20 flex-shrink-0">
                                             <div className="h-1.5 rounded-full bg-white/10">
                                                 <div className="h-full rounded-full" style={{ width: `${rate}%`, background: r.color }} />
                                             </div>
