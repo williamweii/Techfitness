@@ -65,7 +65,7 @@ export default function MetricsForm({ clientId }: Props) {
       </motion.button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIsOpen(false)}>
+        <div className="fixed inset-0 z-[1100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIsOpen(false)}>
           <div 
             className="bg-zinc-900 border-t sm:border border-white/10 w-full max-w-md rounded-t-[2.5rem] sm:rounded-3xl p-6 shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-8 duration-300" 
             onClick={e => e.stopPropagation()}
