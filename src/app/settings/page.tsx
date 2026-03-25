@@ -47,7 +47,8 @@ export default function SettingsPage() {
       {/* Ambient glow */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-purple-800/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-xl mx-auto relative pb-32">
+      <div className="flex flex-col items-center">
+      <div className="w-full max-w-xl relative pb-32">
         {/* Header */}
         <div className="sticky top-0 z-50 bg-black/70 backdrop-blur-xl border-b border-white/8 px-5 py-4 pt-[calc(env(safe-area-inset-top)+16px)] flex items-center gap-3">
           <Link href="/profile" className="p-2 -ml-1 rounded-xl hover:bg-white/8 transition-colors">
@@ -90,7 +91,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Onboarding answers quick summary */}
-              <div className="relative mt-4 pt-4 border-t border-white/8 grid grid-cols-2 gap-3">
+              <div className="relative mt-4 pt-4 border-t border-white/8 grid grid-cols-2 gap-3 overflow-hidden">
                 <InfoTile label="目標" value={goalLabel(profile.goal)} color="text-amber-300" />
                 <InfoTile label="飲食模式" value={dietLabel(profile.diet_mode)} color="text-emerald-300" />
                 <InfoTile label="訓練頻率" value={profile.weekly_frequency ? `${profile.weekly_frequency}天/週` : '未設定'} color="text-sky-300" />
@@ -160,6 +161,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+      </div>
     </main>
   );
 }
@@ -207,7 +209,7 @@ function SettingsRow({
       </div>
       <div className="flex-1 min-w-0">
         <div className={`font-medium text-[15px] ${accent ? 'text-purple-300' : 'text-zinc-100'}`}>{label}</div>
-        {desc && <div className="text-xs text-zinc-500 mt-0.5 truncate">{desc}</div>}
+        {desc && <div className="text-xs text-zinc-500 mt-0.5 break-words line-clamp-1">{desc}</div>}
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         {badge && <span className="text-xs text-zinc-500 font-medium bg-white/5 px-2 py-0.5 rounded-full">{badge}</span>}

@@ -174,7 +174,7 @@ export default function NutritionTracker() {
                 </>
             ) : (
                 /* ── ANALYTICS TAB ── */
-                <div className="px-4 pb-32 space-y-4">
+                <div className="px-3 pb-32 space-y-4 overflow-x-hidden">
 
                     {/* ── Macro Stat Cards ── */}
                     <div className="grid grid-cols-3 gap-2 mt-1">
@@ -186,17 +186,17 @@ export default function NutritionTracker() {
                             const pct = Math.min(Math.round((val / target) * 100), 100);
                             const r = 18, circ = 2 * Math.PI * r;
                             return (
-                                <div key={label} className="rounded-2xl bg-white/5 border border-white/10 p-3 flex flex-col items-center gap-2">
+                                <div key={label} className="rounded-2xl bg-white/5 border border-white/10 p-2 pt-3 flex flex-col items-center gap-1 min-w-0">
                                     <svg width="52" height="52" className="-rotate-90">
                                         <circle cx="26" cy="26" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
                                         <circle cx="26" cy="26" r={r} fill="none" stroke={color} strokeWidth="4"
                                             strokeDasharray={circ} strokeDashoffset={circ * (1 - pct / 100)}
                                             strokeLinecap="round" />
                                     </svg>
-                                    <div className="text-center -mt-1">
-                                        <div className="text-white font-bold text-sm">{pct}%</div>
-                                        <div className="text-zinc-500 text-[10px]">{label}</div>
-                                        <div className="text-zinc-400 text-[10px]">{val}g / {target}g</div>
+                                    <div className="text-center -mt-1 w-full">
+                                        <div className="text-white font-bold text-xs sm:text-sm">{pct}%</div>
+                                        <div className="text-zinc-500 text-[9px] sm:text-[10px] truncate">{label}</div>
+                                        <div className="text-zinc-400 text-[9px] sm:text-[10px] truncate">{val}g / {target}g</div>
                                     </div>
                                 </div>
                             );
