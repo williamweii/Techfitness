@@ -40,7 +40,7 @@ export default function Profile() {
 
             <section className={styles.content}>
                 {/* Today's activity rings — full width, same as cards below */}
-                <div className="mb-6">
+                <div className="mb-10">
                     <HeroRings />
                 </div>
 
@@ -183,7 +183,7 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                         <motion.div
                             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
                             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-                            className="w-full max-w-md mx-auto bg-zinc-900 border border-white/10 rounded-t-3xl pb-10 overflow-hidden max-h-[90dvh] overflow-y-auto"
+                            className="w-full max-w-lg mx-auto bg-zinc-900 border border-white/10 rounded-t-3xl pb-12 min-h-[72dvh] max-h-[95dvh] overflow-y-auto"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mt-3 mb-4" />

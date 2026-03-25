@@ -65,17 +65,26 @@ export default function AICoachChat() {
         }, 1500);
     };
 
+    const hasDragged = useRef(false);
+
     return (
         <>
             <AnimatePresence>
                 {!isOpen && (
                     <motion.button
+                        drag
+                        dragMomentum={false}
+                        dragElastic={0.08}
+                        onDragStart={() => { hasDragged.current = false; }}
+                        onDrag={() => { hasDragged.current = true; }}
+                        onClick={() => { if (!hasDragged.current) setIsOpen(true); }}
                         className={styles.toggleBtn}
-                        onClick={() => setIsOpen(true)}
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        style={{ touchAction: 'none' }}
                     >
                         <Bot size={28} />
                     </motion.button>

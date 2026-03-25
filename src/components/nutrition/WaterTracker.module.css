@@ -73,6 +73,62 @@
     white-space: nowrap;
 }
 
+.goalBtn {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.pencilIcon {
+    color: rgba(56, 189, 248, 0.5);
+    flex-shrink: 0;
+}
+
+.editGoalRow {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.goalInput {
+    width: 48px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    border-radius: 6px;
+    padding: 1px 4px;
+    outline: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.goalInput::-webkit-outer-spin-button,
+.goalInput::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.confirmBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background: #38bdf8;
+    border: none;
+    border-radius: 50%;
+    color: #0c1a2e;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+}
+
 .visual {
     flex: 1;
     display: flex;

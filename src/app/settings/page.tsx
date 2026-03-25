@@ -47,9 +47,9 @@ export default function SettingsPage() {
       {/* Ambient glow */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-purple-800/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md mx-auto relative pb-32">
+      <div className="w-full max-w-xl mx-auto relative pb-32">
         {/* Header */}
-        <div className="sticky top-0 z-50 bg-black/70 backdrop-blur-xl border-b border-white/8 px-5 py-4 flex items-center gap-3">
+        <div className="sticky top-0 z-50 bg-black/70 backdrop-blur-xl border-b border-white/8 px-5 py-4 pt-[calc(env(safe-area-inset-top)+16px)] flex items-center gap-3">
           <Link href="/profile" className="p-2 -ml-1 rounded-xl hover:bg-white/8 transition-colors">
             <ArrowLeft size={20} className="text-zinc-300" />
           </Link>
