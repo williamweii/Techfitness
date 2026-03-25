@@ -24,6 +24,7 @@ export default function WaterTracker() {
             {/* Progress value */}
             <div className={styles.valueRow}>
                 <span className={styles.currentVal}>{intake}</span>
+                <span className={styles.percentBadge}>{Math.round(percentage)}%</span>
                 <span className={styles.separator}>/</span>
                 <span className={styles.goalVal}>{goal} ml</span>
             </div>

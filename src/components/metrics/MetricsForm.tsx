@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { Scale, Flame, Dumbbell, Plus, Check, X } from 'lucide-react';
 
@@ -44,14 +45,24 @@ export default function MetricsForm({ clientId }: Props) {
     }
   };
 
+  const hasDragged = useRef(false);
+
   return (
     <>
-      <button 
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-24 right-5 w-14 h-14 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(192,38,211,0.4)] z-[90] text-white hover:scale-105 transition-transform"
+      <motion.button
+        drag
+        dragMomentum={false}
+        dragElastic={0.1}
+        onDragStart={() => { hasDragged.current = false; }}
+        onDrag={() => { hasDragged.current = true; }}
+        onClick={() => { if (!hasDragged.current) setIsOpen(true); }}
+        className="fixed bottom-24 right-5 w-14 h-14 bg-gradient-to-r from-purple-600 to-fuchsia-600 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(192,38,211,0.4)] z-[90] text-white cursor-grab active:cursor-grabbing touch-none"
+        style={{ touchAction: 'none' }}
+        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.08 }}
       >
         <Plus size={26} />
-      </button>
+      </motion.button>
 
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIsOpen(false)}>
