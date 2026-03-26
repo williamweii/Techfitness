@@ -1,25 +1,64 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Droplets, Pencil, Check } from 'lucide-react';
 import styles from './WaterTracker.module.css';
 
+const STORAGE_GOAL_KEY = 'tf_water_goal';
+const STORAGE_INTAKE_KEY = 'tf_water_intake';
+const STORAGE_DATE_KEY = 'tf_water_date';
+
+function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
 export default function WaterTracker() {
-    const [intake, setIntake] = useState(1250);
+    const [intake, setIntake] = useState(0);
     const [goal, setGoal] = useState(2500);
     const [editingGoal, setEditingGoal] = useState(false);
     const [goalInput, setGoalInput] = useState('2500');
+    const [hydrated, setHydrated] = useState(false);
+
+    // Load from localStorage on mount; reset intake if it's a new day
+    useEffect(() => {
+        const savedGoal = localStorage.getItem(STORAGE_GOAL_KEY);
+        if (savedGoal) { const g = parseInt(savedGoal); if (g > 0) { setGoal(g); setGoalInput(String(g)); } }
+
+        const savedDate = localStorage.getItem(STORAGE_DATE_KEY);
+        const today = todayStr();
+        if (savedDate === today) {
+            const savedIntake = localStorage.getItem(STORAGE_INTAKE_KEY);
+            if (savedIntake) setIntake(parseInt(savedIntake) || 0);
+        } else {
+            // New day — reset intake
+            localStorage.setItem(STORAGE_DATE_KEY, today);
+            localStorage.setItem(STORAGE_INTAKE_KEY, '0');
+            setIntake(0);
+        }
+        setHydrated(true);
+    }, []);
+
     const percentage = Math.min(Math.round((intake / goal) * 100), 100);
 
     const addWater = (amount: number) => {
-        setIntake(prev => Math.min(prev + amount, goal));
+        setIntake(prev => {
+            const next = Math.min(prev + amount, goal);
+            localStorage.setItem(STORAGE_INTAKE_KEY, String(next));
+            return next;
+        });
     };
 
     const confirmGoal = () => {
         const val = parseInt(goalInput);
-        if (!isNaN(val) && val > 0) setGoal(val);
+        if (!isNaN(val) && val > 0) {
+            setGoal(val);
+            localStorage.setItem(STORAGE_GOAL_KEY, String(val));
+        }
         setEditingGoal(false);
     };
+
+    if (!hydrated) return null;
 
     return (
         <div className={styles.container}>
