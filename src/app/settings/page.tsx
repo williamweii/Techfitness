@@ -91,7 +91,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Onboarding answers quick summary */}
-              <div className="relative mt-4 pt-4 border-t border-white/8 grid grid-cols-2 gap-3 overflow-hidden">
+              <div className="relative mt-4 pt-4 border-t border-white/8 grid grid-cols-2 gap-4">
                 <InfoTile label="目標" value={goalLabel(profile.goal)} color="text-amber-300" />
                 <InfoTile label="飲食模式" value={dietLabel(profile.diet_mode)} color="text-emerald-300" />
                 <InfoTile label="訓練頻率" value={profile.weekly_frequency ? `${profile.weekly_frequency}天/週` : '未設定'} color="text-sky-300" />
@@ -168,8 +168,8 @@ export default function SettingsPage() {
 
 function InfoTile({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="bg-white/4 rounded-xl px-3 py-2">
-      <div className="text-[10px] text-zinc-500 font-medium mb-0.5">{label}</div>
+    <div className="bg-white/4 rounded-xl px-4 py-3">
+      <div className="text-[10px] text-zinc-500 font-medium mb-1">{label}</div>
       <div className={`text-sm font-semibold ${color} break-words`}>{value}</div>
     </div>
   );

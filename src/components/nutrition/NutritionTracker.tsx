@@ -177,7 +177,7 @@ export default function NutritionTracker() {
                 <div className="px-4 pb-32 space-y-6 overflow-x-hidden">
 
                     {/* ── Macro Stat Cards ── */}
-                    <div className="grid grid-cols-3 gap-3 mt-1">
+                    <div className="grid grid-cols-3 gap-3 mt-3">
                         {[
                             { label: '蛋白質', val: totals.protein, target: TARGETS.protein, color: '#c026d3', grad: 'from-purple-600 to-fuchsia-500' },
                             { label: '碳水', val: totals.carbs, target: TARGETS.carbs, color: '#7c3aed', grad: 'from-violet-600 to-indigo-500' },
@@ -204,7 +204,7 @@ export default function NutritionTracker() {
                     </div>
 
                     {/* ── Calorie trend ── */}
-                    <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+                    <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
                         <div className="flex justify-between items-baseline mb-4">
                             <h3 className="text-sm font-semibold text-zinc-200">本週熱量趨勢</h3>
                             <span className="text-[11px] text-zinc-500">均 2,107 kcal</span>
@@ -271,7 +271,7 @@ export default function NutritionTracker() {
                     </div>
 
                     {/* ── Diet Performance Score — Premium gated ── */}
-                    <div className="rounded-2xl border border-white/10 p-4 relative overflow-hidden"
+                    <div className="rounded-2xl border border-white/10 p-5 relative overflow-hidden"
                         style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(236,72,153,0.08))' }}>
                         <div className={!isPremium ? 'blur-sm opacity-40 pointer-events-none select-none' : ''}>
                             <h3 className="text-sm font-semibold text-zinc-200 mb-4">飲食表現評分</h3>

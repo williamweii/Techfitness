@@ -186,7 +186,7 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                             className="w-[min(100%,580px)] bg-zinc-900 border border-white/10 rounded-t-3xl pb-12 min-h-[72dvh] max-h-[95dvh] overflow-y-auto"
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mt-3 mb-5" />
+                            <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mt-4 mb-6" />
                             <div className="px-6 mb-5 flex justify-between items-center">
                                 <h2 className="text-xl font-bold">我的數據</h2>
                                 {!isPremium && (
@@ -243,12 +243,12 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                             </div>
 
                             {/* Performance placeholders */}
-                            <div className="px-6 grid grid-cols-2 gap-4 pb-8">
+                            <div className="px-6 grid grid-cols-2 gap-5 pb-10">
                                 {[
                                     { label: '運動表現', emoji: '⚡', desc: '最大力量、體能趨勢' },
                                     { label: '飲食表現', emoji: '🥗', desc: '熱量達成率、宏量統計' },
                                 ].map(card => (
-                                    <div key={card.label} className="bg-zinc-800/50 border border-white/8 rounded-2xl p-5 overflow-hidden">
+                                    <div key={card.label} className="bg-zinc-800/50 border border-white/8 rounded-2xl p-5 overflow-hidden flex flex-col gap-2">
                                         <div className="text-2xl mb-2">{card.emoji}</div>
                                         <div className="text-sm font-bold text-zinc-200">{card.label}</div>
                                         <div className="text-[11px] text-zinc-500 mt-1">{card.desc}</div>
