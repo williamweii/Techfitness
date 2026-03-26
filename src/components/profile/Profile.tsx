@@ -104,21 +104,14 @@ const BODY_TABS = [
 ] as const;
 
 type BodyTabId = typeof BODY_TABS[number]['id'];
+type BodyLog = { date: string; weight: number; fat: number; muscle: number };
 
-const MOCK_DATA: Record<BodyTabId, { date: string; value: number }[]> = {
-    weight: [
-        { date: '3/1', value: 75.2 }, { date: '3/8', value: 74.8 },
-        { date: '3/15', value: 74.3 }, { date: '3/22', value: 73.9 },
-    ],
-    fat: [
-        { date: '3/1', value: 18.2 }, { date: '3/8', value: 17.8 },
-        { date: '3/15', value: 17.5 }, { date: '3/22', value: 17.1 },
-    ],
-    muscle: [
-        { date: '3/1', value: 34.1 }, { date: '3/8', value: 34.3 },
-        { date: '3/15', value: 34.6 }, { date: '3/22', value: 34.9 },
-    ],
-};
+const INITIAL_LOGS: BodyLog[] = [
+    { date: '3/1',  weight: 75.2, fat: 18.2, muscle: 34.1 },
+    { date: '3/8',  weight: 74.8, fat: 17.8, muscle: 34.3 },
+    { date: '3/15', weight: 74.3, fat: 17.5, muscle: 34.6 },
+    { date: '3/22', weight: 73.9, fat: 17.1, muscle: 34.9 },
+];
 
 function MiniSparkline({ data, color }: { data: { value: number }[]; color: string }) {
     if (data.length < 2) return null;
@@ -144,13 +137,127 @@ function MiniSparkline({ data, color }: { data: { value: number }[]; color: stri
     );
 }
 
+function BodyEntryModal({ onClose, onSave }: { onClose: () => void; onSave: (log: BodyLog) => void }) {
+    const today = new Date();
+    const dateLabel = `${today.getMonth()+1}/${today.getDate()}`;
+    const [weight, setWeight] = React.useState('');
+    const [fat, setFat] = React.useState('');
+    const [muscle, setMuscle] = React.useState('');
+    const [mode, setMode] = React.useState<'manual' | 'photo'>('manual');
+    const [analyzing, setAnalyzing] = React.useState(false);
+    const [photoMsg, setPhotoMsg] = React.useState('');
+    const fileRef = React.useRef<HTMLInputElement>(null);
+
+    const handleSave = () => {
+        if (!weight) return;
+        onSave({ date: dateLabel, weight: +weight, fat: fat ? +fat : 0, muscle: muscle ? +muscle : 0 });
+        onClose();
+    };
+
+    const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setAnalyzing(true);
+        setPhotoMsg('AI 正在分析 InBody 結果…');
+        // Simulate AI OCR (replace with real API call)
+        await new Promise(r => setTimeout(r, 2000));
+        setWeight('73.5'); setFat('16.8'); setMuscle('35.1');
+        setPhotoMsg('✅ 分析完成！請確認數值後儲存');
+        setAnalyzing(false);
+        setMode('manual');
+    };
+
+    return (
+        <div className="fixed inset-0 z-[1200] bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="w-[min(100%,420px)] bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="px-6 pt-6 pb-4 flex items-center justify-between border-b border-white/8">
+                    <div>
+                        <h3 className="text-lg font-bold text-white">記錄身體數據</h3>
+                        <p className="text-xs text-zinc-500 mt-0.5">{dateLabel}</p>
+                    </div>
+                    <button onClick={onClose} className="w-9 h-9 rounded-xl bg-white/8 flex items-center justify-center text-zinc-400 hover:bg-white/15 transition-colors text-lg">×</button>
+                </div>
+
+                {/* Mode toggle */}
+                <div className="flex gap-3 px-6 pt-5 mb-4">
+                    {(['manual', 'photo'] as const).map(m => (
+                        <button key={m} onClick={() => setMode(m)}
+                            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${mode === m ? 'border-purple-500 bg-purple-500/15 text-purple-300' : 'border-transparent bg-white/5 text-zinc-500'}`}>
+                            {m === 'manual' ? '✏️ 手動輸入' : '📸 InBody 拍照'}
+                        </button>
+                    ))}
+                </div>
+
+                {mode === 'photo' ? (
+                    <div className="px-6 pb-6 flex flex-col items-center gap-4">
+                        {photoMsg && <p className="text-sm text-emerald-400 text-center">{photoMsg}</p>}
+                        <button
+                            onClick={() => fileRef.current?.click()}
+                            disabled={analyzing}
+                            className="w-full py-10 rounded-2xl border-2 border-dashed border-white/15 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all flex flex-col items-center gap-3 text-zinc-400"
+                        >
+                            <span className="text-4xl">{analyzing ? '⏳' : '📸'}</span>
+                            <span className="text-sm">{analyzing ? 'AI 分析中…' : '點擊上傳 InBody 報告照片'}</span>
+                            <span className="text-xs text-zinc-600">支援 JPG / PNG</span>
+                        </button>
+                        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+                    </div>
+                ) : (
+                    <div className="px-6 pb-6 flex flex-col gap-4">
+                        {photoMsg && <p className="text-sm text-emerald-400 text-center py-1">{photoMsg}</p>}
+                        {[
+                            { label: '體重', unit: 'kg', val: weight, setVal: setWeight, placeholder: '例：73.5' },
+                            { label: '體脂肪', unit: '%', val: fat, setVal: setFat, placeholder: '例：17.2' },
+                            { label: '骨骼肌', unit: 'kg', val: muscle, setVal: setMuscle, placeholder: '例：34.8' },
+                        ].map(f => (
+                            <div key={f.label}>
+                                <label className="text-xs text-zinc-400 mb-1.5 block font-medium">{f.label}</label>
+                                <div className="flex items-center gap-2 bg-zinc-800 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-purple-500/50 transition-colors">
+                                    <input
+                                        type="number"
+                                        inputMode="decimal"
+                                        placeholder={f.placeholder}
+                                        value={f.val}
+                                        onChange={e => f.setVal(e.target.value)}
+                                        className="flex-1 bg-transparent text-white text-sm outline-none placeholder-zinc-600"
+                                    />
+                                    <span className="text-zinc-500 text-xs font-medium">{f.unit}</span>
+                                </div>
+                            </div>
+                        ))}
+                        <button
+                            onClick={handleSave}
+                            disabled={!weight}
+                            className="w-full mt-1 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-violet-600 text-white font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:from-purple-500 hover:to-violet-500 active:scale-95"
+                        >
+                            儲存數據
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 function MyDataSection({ isPremium }: { isPremium: boolean }) {
     const [open, setOpen] = useState(false);
     const [tab, setTab] = useState<BodyTabId>('weight');
+    const [logs, setLogs] = useState<BodyLog[]>(INITIAL_LOGS);
+    const [showEntry, setShowEntry] = useState(false);
+
     const activeTab = BODY_TABS.find(t => t.id === tab)!;
-    const data = MOCK_DATA[tab];
+    const data = logs.map(l => ({ date: l.date, value: l[tab] }));
     const latest = data[data.length - 1].value;
     const delta = +(data[data.length - 1].value - data[0].value).toFixed(1);
+
+    const handleSaveLog = (log: BodyLog) => {
+        setLogs(prev => {
+            const idx = prev.findIndex(l => l.date === log.date);
+            if (idx >= 0) { const next = [...prev]; next[idx] = log; return next; }
+            return [...prev, log];
+        });
+    };
 
     return (
         <>
@@ -189,11 +296,19 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                             <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mt-4 mb-6" />
                             <div className="px-6 mb-5 flex justify-between items-center">
                                 <h2 className="text-xl font-bold">我的數據</h2>
-                                {!isPremium && (
-                                    <span className="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                                        <Lock size={10} />Premium 功能
-                                    </span>
-                                )}
+                                <div className="flex items-center gap-2">
+                                    {!isPremium && (
+                                        <span className="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                                            <Lock size={10} />Premium 功能
+                                        </span>
+                                    )}
+                                    <button
+                                        onClick={() => setShowEntry(true)}
+                                        className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-colors"
+                                    >
+                                        + 記錄
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Body tabs */}
@@ -242,16 +357,16 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                                 <MiniSparkline data={data} color={activeTab.color} />
                             </div>
 
-                            {/* Performance placeholders */}
+                            {/* Performance cards */}
                             <div className="px-6 grid grid-cols-2 gap-5 pb-10">
                                 {[
                                     { label: '運動表現', emoji: '⚡', desc: '最大力量、體能趨勢' },
                                     { label: '飲食表現', emoji: '🥗', desc: '熱量達成率、宏量統計' },
                                 ].map(card => (
-                                    <div key={card.label} className="bg-zinc-800/50 border border-white/8 rounded-2xl p-5 overflow-hidden flex flex-col gap-2">
-                                        <div className="text-2xl mb-2">{card.emoji}</div>
+                                    <div key={card.label} className="bg-zinc-800/50 border border-white/8 rounded-2xl p-5 flex flex-col gap-3">
+                                        <div className="text-2xl">{card.emoji}</div>
                                         <div className="text-sm font-bold text-zinc-200">{card.label}</div>
-                                        <div className="text-[11px] text-zinc-500 mt-1">{card.desc}</div>
+                                        <div className="text-[11px] text-zinc-500 leading-relaxed">{card.desc}</div>
                                     </div>
                                 ))}
                             </div>
@@ -259,6 +374,9 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {showEntry && <BodyEntryModal onClose={() => setShowEntry(false)} onSave={handleSaveLog} />}
         </>
     );
 }
+

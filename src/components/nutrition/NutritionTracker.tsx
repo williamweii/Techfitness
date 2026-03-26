@@ -174,10 +174,10 @@ export default function NutritionTracker() {
                 </>
             ) : (
                 /* ── ANALYTICS TAB ── */
-                <div className="px-4 pb-32 space-y-6 overflow-x-hidden">
+                <div className="px-4 pb-32 flex flex-col gap-6 overflow-x-hidden pt-2">
 
                     {/* ── Macro Stat Cards ── */}
-                    <div className="grid grid-cols-3 gap-3 mt-3">
+                    <div className="grid grid-cols-3 gap-3">
                         {[
                             { label: '蛋白質', val: totals.protein, target: TARGETS.protein, color: '#c026d3', grad: 'from-purple-600 to-fuchsia-500' },
                             { label: '碳水', val: totals.carbs, target: TARGETS.carbs, color: '#7c3aed', grad: 'from-violet-600 to-indigo-500' },
@@ -186,17 +186,17 @@ export default function NutritionTracker() {
                             const pct = Math.min(Math.round((val / target) * 100), 100);
                             const r = 18, circ = 2 * Math.PI * r;
                             return (
-                                <div key={label} className="rounded-2xl bg-white/5 border border-white/10 p-2 pt-3 flex flex-col items-center gap-1 min-w-0">
+                                <div key={label} className="rounded-2xl bg-zinc-800/80 border border-white/12 p-4 pb-3 flex flex-col items-center gap-1.5 min-w-0">
                                     <svg width="52" height="52" className="-rotate-90">
                                         <circle cx="26" cy="26" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
                                         <circle cx="26" cy="26" r={r} fill="none" stroke={color} strokeWidth="4"
                                             strokeDasharray={circ} strokeDashoffset={circ * (1 - pct / 100)}
                                             strokeLinecap="round" />
                                     </svg>
-                                    <div className="text-center -mt-1 w-full">
-                                        <div className="text-white font-bold text-xs sm:text-sm">{pct}%</div>
-                                        <div className="text-zinc-500 text-[9px] sm:text-[10px] truncate">{label}</div>
-                                        <div className="text-zinc-400 text-[9px] sm:text-[10px] truncate">{val}g / {target}g</div>
+                                    <div className="text-center w-full">
+                                        <div className="text-white font-bold text-sm">{pct}%</div>
+                                        <div className="text-zinc-400 text-[10px] truncate">{label}</div>
+                                        <div className="text-zinc-500 text-[9px] truncate">{val}g / {target}g</div>
                                     </div>
                                 </div>
                             );
@@ -204,7 +204,7 @@ export default function NutritionTracker() {
                     </div>
 
                     {/* ── Calorie trend ── */}
-                    <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                    <div className="rounded-2xl bg-zinc-800/80 border border-white/12 p-6">
                         <div className="flex justify-between items-baseline mb-4">
                             <h3 className="text-sm font-semibold text-zinc-200">本週熱量趨勢</h3>
                             <span className="text-[11px] text-zinc-500">均 2,107 kcal</span>
@@ -242,7 +242,7 @@ export default function NutritionTracker() {
                     </div>
 
                     {/* ── Weekly Summary ── */}
-                    <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                    <div className="rounded-2xl bg-zinc-800/80 border border-white/12 p-6">
                         <h3 className="text-sm font-semibold text-zinc-200 mb-3">本週攝取總結</h3>
                         <div className="space-y-3">
                             {[
@@ -271,7 +271,7 @@ export default function NutritionTracker() {
                     </div>
 
                     {/* ── Diet Performance Score — Premium gated ── */}
-                    <div className="rounded-2xl border border-white/10 p-5 relative overflow-hidden"
+                    <div className="rounded-2xl border border-white/12 p-6 relative overflow-hidden"
                         style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(236,72,153,0.08))' }}>
                         <div className={!isPremium ? 'blur-sm opacity-40 pointer-events-none select-none' : ''}>
                             <h3 className="text-sm font-semibold text-zinc-200 mb-4">飲食表現評分</h3>

@@ -109,6 +109,7 @@ export default function WorkoutLog() {
     const [isPremium] = useState(false);
     const [renamingPlan, setRenamingPlan] = useState<string | null>(null);
     const [renameValue, setRenameValue] = useState('');
+    const [deletingPlan, setDeletingPlan] = useState<string | null>(null);
 
     // Constants and derived state
     const customCount = exercises.filter(e => parseInt(e.id) > 100).length;
@@ -175,6 +176,17 @@ export default function WorkoutLog() {
         setRenamingPlan(null);
         setRenameValue('');
     };
+
+    function handleDeletePlan(plan: string) {
+        const updated = plans.filter(p => p !== plan);
+        setPlans(updated);
+        if (currentPlanName === plan) {
+            const next = updated[0] || '預設計畫';
+            setCurrentPlanName(next);
+            setExercises(loadPlanExercises(next));
+        }
+        setDeletingPlan(null);
+    }
 
     const toggleSet = (exId: string, setId: string) => {
         setExercises(prev => prev.map(ex => {
@@ -271,15 +283,22 @@ export default function WorkoutLog() {
                             className="w-[min(100%,480px)] bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden max-h-[85dvh] flex flex-col"
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="px-5 pt-5 pb-3">
+                            <div className="px-6 pt-6 pb-4">
                                 <h2 className="text-xl font-bold text-white">選擇訓練計畫</h2>
-                                <p className="text-sm text-zinc-500 mt-1">長按或點擊鉛筆圖示可重新命名</p>
+                                <p className="text-sm text-zinc-500 mt-1.5">點擊鉛筆重新命名・點擊垃圾桶刪除</p>
                             </div>
 
                             <div className="flex-1 overflow-y-auto">
                                 {plans.map(plan => (
-                                    <div key={plan} className={`flex items-center gap-3 px-5 border-b border-white/6 ${currentPlanName === plan ? 'bg-purple-500/10' : ''}`}>
-                                        {renamingPlan === plan ? (
+                                    <div key={plan} className={`flex items-center gap-3 px-6 border-b border-white/6 ${currentPlanName === plan ? 'bg-purple-500/10' : ''}`}>
+                                        {deletingPlan === plan ? (
+                                            /* ── Delete confirm row ── */
+                                            <div className="flex-1 flex items-center gap-2 py-4">
+                                                <span className="flex-1 text-sm text-zinc-300">確定刪除「{plan}」？</span>
+                                                <button onClick={() => handleDeletePlan(plan)} className="px-3 py-2 bg-red-600 text-white text-xs rounded-xl font-bold">刪除</button>
+                                                <button onClick={() => setDeletingPlan(null)} className="px-3 py-2 bg-zinc-700 text-zinc-300 text-xs rounded-xl">取消</button>
+                                            </div>
+                                        ) : renamingPlan === plan ? (
                                             <div className="flex-1 flex items-center gap-2 py-3">
                                                 <input
                                                     autoFocus
@@ -306,6 +325,13 @@ export default function WorkoutLog() {
                                                     title="重新命名"
                                                 >
                                                     ✏️
+                                                </button>
+                                                <button
+                                                    onClick={() => setDeletingPlan(plan)}
+                                                    className="p-2 text-zinc-600 hover:text-red-400 transition-colors"
+                                                    title="刪除"
+                                                >
+                                                    🗑️
                                                 </button>
                                             </>
                                         )}
