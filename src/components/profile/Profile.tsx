@@ -214,7 +214,7 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                             </div>
 
                             {/* Chart card */}
-                            <div className="mx-5 bg-zinc-800/50 border border-white/8 rounded-2xl p-5 mb-4 relative overflow-hidden">
+                            <div className="mx-5 bg-zinc-800/50 border border-white/8 rounded-2xl p-5 mb-6 relative overflow-hidden">
                                 {!isPremium && (
                                     <div className="absolute inset-0 rounded-2xl backdrop-blur-md bg-black/50 z-10 flex flex-col items-center justify-center gap-2">
                                         <Lock size={22} className="text-purple-400" />
@@ -243,20 +243,15 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                             </div>
 
                             {/* Performance placeholders */}
-                            <div className="px-5 grid grid-cols-2 gap-3 pb-6">
+                            <div className="px-5 grid grid-cols-2 gap-4 pb-8">
                                 {[
-                                    { label: '運動表現', emoji: '⚡', desc: '最大力量、體能趨勢', locked: !isPremium },
-                                    { label: '飲食表現', emoji: '🥗', desc: '熱量達成率、宏量統計', locked: !isPremium },
+                                    { label: '運動表現', emoji: '⚡', desc: '最大力量、體能趨勢' },
+                                    { label: '飲食表現', emoji: '🥗', desc: '熱量達成率、宏量統計' },
                                 ].map(card => (
-                                    <div key={card.label} className="relative bg-zinc-800/50 border border-white/8 rounded-2xl p-4 overflow-hidden">
-                                        {card.locked && (
-                                            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
-                                                <Lock size={16} className="text-zinc-400" />
-                                            </div>
-                                        )}
-                                        <div className="text-xl mb-1">{card.emoji}</div>
+                                    <div key={card.label} className="bg-zinc-800/50 border border-white/8 rounded-2xl p-5 overflow-hidden">
+                                        <div className="text-2xl mb-2">{card.emoji}</div>
                                         <div className="text-sm font-bold text-zinc-200">{card.label}</div>
-                                        <div className="text-[11px] text-zinc-500 mt-0.5">{card.desc}</div>
+                                        <div className="text-[11px] text-zinc-500 mt-1">{card.desc}</div>
                                     </div>
                                 ))}
                             </div>

@@ -422,37 +422,36 @@ export default function WorkoutLog() {
                 {showAddModal && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[1200] bg-black/70 backdrop-blur-sm flex items-end justify-center"
+                        className="fixed inset-0 z-[1200] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
                         onClick={() => setShowAddModal(false)}
                     >
                         <motion.div
-                            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                            className="w-[min(100%,520px)] bg-zinc-900 border border-white/10 border-b-0 rounded-t-3xl overflow-hidden pb-28"
+                            className="w-[min(100%,480px)] bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden max-h-[85dvh] flex flex-col"
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="w-10 h-1 bg-zinc-600 rounded-full mx-auto mt-3 mb-3" />
 
                             {/* Header */}
-                            <div className="px-5 mb-3 flex items-center justify-between">
+                            <div className="px-5 pt-5 pb-3 flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-lg font-bold text-white">新增動作</h3>
+                                    <h3 className="text-xl font-bold text-white">新增動作</h3>
                                     {!isPremium && (
-                                        <p className="text-xs text-zinc-500">
+                                        <p className="text-sm text-zinc-500 mt-1">
                                             已使用 <span className={exercises.length >= FREE_EXERCISE_LIMIT ? 'text-amber-400 font-bold' : 'text-purple-400 font-bold'}>{exercises.length}/{FREE_EXERCISE_LIMIT}</span>
                                             {exercises.length >= FREE_EXERCISE_LIMIT && ' · 升級 Pro 解鎖無限'}
                                         </p>
                                     )}
                                 </div>
-                                <button onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-xl bg-white/8 flex items-center justify-center text-zinc-400 text-lg">×</button>
+                                <button onClick={() => setShowAddModal(false)} className="w-10 h-10 rounded-xl bg-white/8 flex items-center justify-center text-zinc-400 text-xl hover:bg-white/15 transition-colors">×</button>
                             </div>
 
                             {/* Tab switcher */}
-                            <div className="flex gap-2 px-5 mb-4">
+                            <div className="flex gap-3 px-5 mb-4">
                                 {(['existing', 'new'] as const).map(t => (
                                     <button key={t}
                                         onClick={() => setAddTab(t)}
-                                        className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all border-2 ${
+                                        className={`flex-1 py-3 rounded-xl text-base font-semibold transition-all border-2 ${
                                             addTab === t
                                                 ? 'border-purple-500 bg-purple-500/15 text-purple-300'
                                                 : 'border-transparent bg-white/5 text-zinc-500'
@@ -465,9 +464,9 @@ export default function WorkoutLog() {
 
                             {addTab === 'existing' ? (
                                 /* Pick from existing */
-                                <div className="max-h-[45vh] overflow-y-auto px-2 pb-2">
+                                <div className="flex-1 overflow-y-auto px-4 pb-4">
                                     {allKnownExercises.length === 0 ? (
-                                        <p className="text-center text-zinc-500 text-sm py-8">尚無已建立的動作</p>
+                                        <p className="text-center text-zinc-500 text-base py-10">尚無已建立的動作</p>
                                     ) : (
                                         allKnownExercises.map(ex => {
                                             const alreadyIn = exercises.some(e => e.name === ex.name);
@@ -477,15 +476,15 @@ export default function WorkoutLog() {
                                                     key={ex.id}
                                                     onClick={() => handlePickExercise(ex)}
                                                     disabled={alreadyIn || atLimit}
-                                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl mb-1 text-left transition-all ${
+                                                    className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl mb-2 text-left transition-all ${
                                                         alreadyIn ? 'opacity-40 cursor-default bg-white/3' :
                                                         atLimit ? 'opacity-40 cursor-not-allowed bg-white/3' :
                                                         'bg-white/5 hover:bg-purple-500/15 active:bg-purple-500/25'
                                                     }`}
                                                 >
-                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white/10 text-zinc-400 w-10 text-center shrink-0">{ex.group}</span>
-                                                    <span className="text-sm font-semibold text-zinc-100 flex-1">{ex.name}</span>
-                                                    {alreadyIn && <span className="text-[10px] text-zinc-500">已加入</span>}
+                                                    <span className="text-xs font-bold px-3 py-1 rounded-lg bg-white/10 text-zinc-300 min-w-[3rem] text-center shrink-0">{ex.group}</span>
+                                                    <span className="text-base font-semibold text-zinc-100 flex-1">{ex.name}</span>
+                                                    {alreadyIn && <span className="text-xs text-zinc-500">已加入</span>}
                                                 </button>
                                             );
                                         })
