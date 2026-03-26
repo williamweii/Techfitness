@@ -186,8 +186,8 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                             className="w-[min(100%,580px)] bg-zinc-900 border border-white/10 rounded-t-3xl pb-12 min-h-[72dvh] max-h-[95dvh] overflow-y-auto"
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mt-3 mb-4" />
-                            <div className="px-5 mb-4 flex justify-between items-center">
+                            <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mt-3 mb-5" />
+                            <div className="px-6 mb-5 flex justify-between items-center">
                                 <h2 className="text-xl font-bold">我的數據</h2>
                                 {!isPremium && (
                                     <span className="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2.5 py-1 rounded-full flex items-center gap-1.5">
@@ -197,7 +197,7 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                             </div>
 
                             {/* Body tabs */}
-                            <div className="flex gap-2 px-5 mb-5">
+                            <div className="flex gap-2 px-6 mb-5">
                                 {BODY_TABS.map(t => (
                                     <button
                                         key={t.id}
@@ -214,7 +214,7 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                             </div>
 
                             {/* Chart card */}
-                            <div className="mx-5 bg-zinc-800/50 border border-white/8 rounded-2xl p-5 mb-6 relative overflow-hidden">
+                            <div className="mx-6 bg-zinc-800/50 border border-white/8 rounded-2xl p-5 mb-6 relative overflow-hidden">
                                 {!isPremium && (
                                     <div className="absolute inset-0 rounded-2xl backdrop-blur-md bg-black/50 z-10 flex flex-col items-center justify-center gap-2">
                                         <Lock size={22} className="text-purple-400" />
@@ -243,7 +243,7 @@ function MyDataSection({ isPremium }: { isPremium: boolean }) {
                             </div>
 
                             {/* Performance placeholders */}
-                            <div className="px-5 grid grid-cols-2 gap-4 pb-8">
+                            <div className="px-6 grid grid-cols-2 gap-4 pb-8">
                                 {[
                                     { label: '運動表現', emoji: '⚡', desc: '最大力量、體能趨勢' },
                                     { label: '飲食表現', emoji: '🥗', desc: '熱量達成率、宏量統計' },

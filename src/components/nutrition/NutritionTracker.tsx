@@ -174,10 +174,10 @@ export default function NutritionTracker() {
                 </>
             ) : (
                 /* ── ANALYTICS TAB ── */
-                <div className="px-4 pb-32 space-y-5 overflow-x-hidden">
+                <div className="px-4 pb-32 space-y-6 overflow-x-hidden">
 
                     {/* ── Macro Stat Cards ── */}
-                    <div className="grid grid-cols-3 gap-2 mt-1">
+                    <div className="grid grid-cols-3 gap-3 mt-1">
                         {[
                             { label: '蛋白質', val: totals.protein, target: TARGETS.protein, color: '#c026d3', grad: 'from-purple-600 to-fuchsia-500' },
                             { label: '碳水', val: totals.carbs, target: TARGETS.carbs, color: '#7c3aed', grad: 'from-violet-600 to-indigo-500' },

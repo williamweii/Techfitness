@@ -68,8 +68,24 @@ function savePlanExercises(planName: string, exercises: Exercise[]) {
 
 export default function WorkoutLog() {
     const [plans, setPlans] = useState<string[]>(() => loadPlans());
-    const [currentPlanName, setCurrentPlanName] = useState<string>(() => loadPlans()[0]);
-    const [exercises, setExercises] = useState<Exercise[]>(() => loadPlanExercises(loadPlans()[0]));
+    const [currentPlanName, setCurrentPlanName] = useState<string>(() => {
+        if (typeof window !== 'undefined') {
+            const todayPlan = localStorage.getItem('tf_today_plan');
+            if (todayPlan) {
+                const allPlans = loadPlans();
+                if (allPlans.includes(todayPlan)) return todayPlan;
+            }
+        }
+        return loadPlans()[0];
+    });
+    const [exercises, setExercises] = useState<Exercise[]>(() => {
+        if (typeof window !== 'undefined') {
+            const todayPlan = localStorage.getItem('tf_today_plan');
+            const allPlans = loadPlans();
+            if (todayPlan && allPlans.includes(todayPlan)) return loadPlanExercises(todayPlan);
+        }
+        return loadPlanExercises(loadPlans()[0]);
+    });
 
     // Persist plans list
     React.useEffect(() => {
@@ -246,22 +262,21 @@ export default function WorkoutLog() {
                 {showPlanMenu && (
                     <motion.div
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[1100] bg-black/70 backdrop-blur-sm flex items-end justify-center"
+                        className="fixed inset-0 z-[1100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
                         onClick={() => { setShowPlanMenu(false); setRenamingPlan(null); }}
                     >
                         <motion.div
-                            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
                             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-                            className="w-[min(100%,480px)] bg-zinc-900 border border-white/10 border-b-0 rounded-t-3xl overflow-hidden pb-28"
+                            className="w-[min(100%,480px)] bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden max-h-[85dvh] flex flex-col"
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="w-10 h-1 bg-zinc-600 rounded-full mx-auto mt-3 mb-4" />
-                            <div className="px-5 pb-2">
-                                <h2 className="text-lg font-bold text-white">選擇訓練計畫</h2>
-                                <p className="text-xs text-zinc-500 mt-0.5">長按或點擊鉛筆圖示可重新命名</p>
+                            <div className="px-5 pt-5 pb-3">
+                                <h2 className="text-xl font-bold text-white">選擇訓練計畫</h2>
+                                <p className="text-sm text-zinc-500 mt-1">長按或點擊鉛筆圖示可重新命名</p>
                             </div>
 
-                            <div className="max-h-[50vh] overflow-y-auto pb-24">
+                            <div className="flex-1 overflow-y-auto">
                                 {plans.map(plan => (
                                     <div key={plan} className={`flex items-center gap-3 px-5 border-b border-white/6 ${currentPlanName === plan ? 'bg-purple-500/10' : ''}`}>
                                         {renamingPlan === plan ? (

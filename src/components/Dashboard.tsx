@@ -35,21 +35,34 @@ export default function Dashboard() {
     const [availablePlans, setAvailablePlans] = useState<string[]>([]);
 
     useEffect(() => {
+        // Load schedule
         try {
             const saved = localStorage.getItem('tf_week_schedule');
             if (saved) setWeekSchedule(JSON.parse(saved));
         } catch {}
+        // Load available plans (tf_workout_plans is a string[])
         try {
             const plans = localStorage.getItem('tf_workout_plans');
             if (plans) {
-                const parsed = JSON.parse(plans);
-                setAvailablePlans(parsed.map((p: { name: string }) => p.name));
+                const parsed = JSON.parse(plans) as string[];
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setAvailablePlans(parsed);
+                    return; // skip fallback
+                }
             }
         } catch {}
-        if (availablePlans.length === 0) {
-            setAvailablePlans(['胸、肩、三頭肌專項', '背、二頭肌專項', '腿部專項', '全身訓練']);
-        }
+        setAvailablePlans(['胸、肩、三頭肌專項', '背、二頭肌專項', '腿部專項', '全身訓練']);
     }, []);
+
+    // Sync today's plan to localStorage so WorkoutLog picks it up
+    useEffect(() => {
+        const todayPlan = weekSchedule[todayIdx];
+        if (todayPlan) {
+            localStorage.setItem('tf_today_plan', todayPlan);
+        } else {
+            localStorage.removeItem('tf_today_plan');
+        }
+    }, [weekSchedule, todayIdx]);
     return (
         <div className={styles.dashboard}>
             <header className={styles.header}>
