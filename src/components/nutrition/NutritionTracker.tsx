@@ -66,7 +66,16 @@ export default function NutritionTracker() {
             .eq('user_id', user.id)
             .eq('logged_date', todayISO())
             .order('created_at', { ascending: true });
-        if (!error && data) setLogs(data.map(dbRowToUI));
+        if (!error && data) {
+            setLogs(prev => {
+                const dbRows = data.map(dbRowToUI);
+                const confirmedDbIds = new Set(dbRows.map(r => r.dbId));
+                // Preserve optimistic items that haven't been confirmed by DB yet
+                // (pending items have no dbId)
+                const pending = prev.filter(l => !l.dbId && !confirmedDbIds.has(l.id as number));
+                return [...dbRows, ...pending];
+            });
+        }
         setLoadingLogs(false);
     }, [user]);
 
