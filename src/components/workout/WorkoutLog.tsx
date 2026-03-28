@@ -132,7 +132,7 @@ export default function WorkoutLog() {
         }
         loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user?.id]);
 
     // ─── Debounced auto-save exercises for current plan ──────────────────────
     React.useEffect(() => {

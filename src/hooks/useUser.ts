@@ -21,26 +21,34 @@ export function useUser(): UseUserReturn {
     let mounted = true;
 
     async function load(userId: string) {
-      const { data } = await supabase
-        .from('fitness_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      if (mounted) setProfile(data ?? null);
+      try {
+        const { data } = await supabase
+          .from('fitness_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        if (mounted) setProfile(data ?? null);
+      } catch {
+        // Network error — leave profile null, UI degrades gracefully
+      }
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return;
-      const u = session?.user ?? null;
-      setUser(u);
-      if (u) load(u.id).finally(() => { if (mounted) setLoading(false); });
-      else setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (!mounted) return;
+        const u = session?.user ?? null;
+        setUser(prev => (prev?.id === u?.id ? prev : u));
+        if (u) load(u.id).finally(() => { if (mounted) setLoading(false); });
+        else setLoading(false);
+      })
+      .catch(() => { if (mounted) setLoading(false); }); // Supabase unreachable
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       const u = session?.user ?? null;
-      setUser(u);
+      // Stabilise the user reference: if the user ID hasn't changed (e.g. TOKEN_REFRESHED),
+      // keep the existing object so downstream [user] effects don't re-fire.
+      setUser(prev => (prev?.id === u?.id ? prev : u));
       if (u) load(u.id);
       else setProfile(null);
     });

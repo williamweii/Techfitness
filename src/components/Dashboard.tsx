@@ -103,7 +103,8 @@ export default function Dashboard() {
         ]);
 
         setStatsLoading(false);
-    }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]); // stable: don't recreate on TOKEN_REFRESHED
 
     useEffect(() => { loadStats(); }, [loadStats]);
 
@@ -154,7 +155,8 @@ export default function Dashboard() {
         }
 
         loadScheduleAndPlans();
-    }, [user]); // re-run on login/logout
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]); // re-run only when user actually changes (not on TOKEN_REFRESHED)
 
     // Keep tf_today_plan in sync (used by WorkoutLog to pre-select today's plan)
     useEffect(() => {
