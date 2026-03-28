@@ -3,7 +3,8 @@
     background: var(--card);
     border-radius: 16px;
     border: 1px solid var(--border);
-    max-height: 400px;
+    max-height: calc(100dvh - 3rem);
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
 }

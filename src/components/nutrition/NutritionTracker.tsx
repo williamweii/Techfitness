@@ -93,6 +93,11 @@ export default function NutritionTracker() {
 
     // ── Add / update food (optimistic) ────────────────────────────────────
     const handleAddFood = async (food: any) => {
+        // Close modal immediately regardless of outcome
+        setShowSearch(false);
+        setShowScanner(false);
+        setEditingFood(null);
+
         if (!user) return;
 
         const mealType: MealType = food.meal_type ?? 'snack';
@@ -153,10 +158,6 @@ export default function NutritionTracker() {
                 setLogs(prev => prev.map(l => l.id === tempId ? { ...dbRowToUI(data), micronutrients: food.micronutrients } : l));
             }
         }
-
-        setShowSearch(false);
-        setShowScanner(false);
-        setEditingFood(null);
     };
 
     // ── Delete food ────────────────────────────────────────────────────────
