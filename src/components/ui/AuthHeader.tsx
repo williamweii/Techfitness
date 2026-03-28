@@ -13,12 +13,15 @@ export default function AuthHeader() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Hard timeout: never stay in loading state more than 2s
+    const fallbackTimer = setTimeout(() => setLoading(false), 2000);
+
     // Restore existing session silently – NO redirect on normal page load
     const restore = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         setSession(currentSession);
-        if (!currentSession) { setLoading(false); return; }
+        if (!currentSession) { return; }
 
         const { data } = await supabase
           .from('fitness_profiles')
@@ -29,6 +32,7 @@ export default function AuthHeader() {
       } catch {
         // Network error or Supabase unreachable — still show the UI
       } finally {
+        clearTimeout(fallbackTimer);
         setLoading(false);
       }
     };
@@ -60,7 +64,7 @@ export default function AuthHeader() {
         setLoading(false);
       }
     });
-    return () => subscription.unsubscribe();
+    return () => { clearTimeout(fallbackTimer); subscription.unsubscribe(); };
   }, [router]);
 
   const handleSignIn = async () => {
