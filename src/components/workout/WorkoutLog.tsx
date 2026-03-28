@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ChevronDown, Plus, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './WorkoutLog.module.css';
@@ -8,7 +8,7 @@ import ActiveTimer from './ActiveTimer';
 import RollingInput from '../ui/RollingInput';
 import GlobalTimer from './GlobalTimer';
 import { useUser } from '@/hooks/useUser';
-import { supabase, WorkoutLogInsert, todayISO } from '@/lib/supabase';
+import { supabase, WorkoutLogInsert, todayISO, UserPlan } from '@/lib/supabase';
 
 interface ExerciseSet {
     id: string;
@@ -43,12 +43,14 @@ const DEFAULT_PLAN_EXERCISES: Record<string, Exercise[]> = {
 const STORAGE_PLANS_KEY = 'tf_workout_plans';
 const STORAGE_EXERCISES_KEY = 'tf_plan_exercises';
 const FREE_EXERCISE_LIMIT = 5;
+const DEFAULT_PLAN_NAMES = ['推拉腿 (推日)', '推拉腿 (拉日)', '推拉腿 (腿日)', '全身訓練 A', '全身訓練 B'];
 
+// ─── Guest-mode localStorage helpers (still used for non-logged-in users) ─────
 function loadPlans(): string[] {
     try {
         const raw = localStorage.getItem(STORAGE_PLANS_KEY);
-        return raw ? JSON.parse(raw) : ['推拉腿 (推日)', '推拉腿 (拉日)', '推拉腿 (腿日)', '全身訓練 A', '全身訓練 B'];
-    } catch { return ['推拉腿 (推日)', '推拉腿 (拉日)', '推拉腿 (腿日)', '全身訓練 A', '全身訓練 B']; }
+        return raw ? JSON.parse(raw) : DEFAULT_PLAN_NAMES;
+    } catch { return DEFAULT_PLAN_NAMES; }
 }
 
 function loadPlanExercises(planName: string): Exercise[] {
@@ -69,35 +71,85 @@ function savePlanExercises(planName: string, exercises: Exercise[]) {
 }
 
 export default function WorkoutLog() {
-    const [plans, setPlans] = useState<string[]>(() => loadPlans());
-    const [currentPlanName, setCurrentPlanName] = useState<string>(() => {
-        if (typeof window !== 'undefined') {
-            const todayPlan = localStorage.getItem('tf_today_plan');
-            if (todayPlan) {
-                const allPlans = loadPlans();
-                if (allPlans.includes(todayPlan)) return todayPlan;
+    const { user, isPremium } = useUser();
+    const [plans, setPlans] = useState<string[]>(DEFAULT_PLAN_NAMES);
+    const [currentPlanName, setCurrentPlanName] = useState<string>(DEFAULT_PLAN_NAMES[0]);
+    const [exercises, setExercises] = useState<Exercise[]>([]);
+    const [plansLoaded, setPlansLoaded] = useState(false);
+    const [allPlansData, setAllPlansData] = useState<Record<string, Exercise[]>>({});
+    const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // ─── Load plans from Supabase (or localStorage for guests) ─────────────────
+    React.useEffect(() => {
+        async function loadData() {
+            const guestPlans = loadPlans();
+            const guestCache: Record<string, Exercise[]> = {};
+            guestPlans.forEach(p => { guestCache[p] = loadPlanExercises(p); });
+            const todayPlan = typeof window !== 'undefined' ? localStorage.getItem('tf_today_plan') : null;
+
+            if (!user) {
+                setAllPlansData(guestCache);
+                setPlans(guestPlans);
+                const initPlan = (todayPlan && guestPlans.includes(todayPlan)) ? todayPlan : guestPlans[0];
+                setCurrentPlanName(initPlan);
+                setExercises(guestCache[initPlan] ?? []);
+                setPlansLoaded(true);
+                return;
             }
-        }
-        return loadPlans()[0];
-    });
-    const [exercises, setExercises] = useState<Exercise[]>(() => {
-        if (typeof window !== 'undefined') {
-            const todayPlan = localStorage.getItem('tf_today_plan');
-            const allPlans = loadPlans();
-            if (todayPlan && allPlans.includes(todayPlan)) return loadPlanExercises(todayPlan);
-        }
-        return loadPlanExercises(loadPlans()[0]);
-    });
 
-    // Persist plans list
-    React.useEffect(() => {
-        localStorage.setItem(STORAGE_PLANS_KEY, JSON.stringify(plans));
-    }, [plans]);
+            const { data } = await supabase
+                .from('user_plans')
+                .select('plan_name, exercises')
+                .eq('user_id', user.id)
+                .order('created_at');
 
-    // Persist exercises for current plan on change
+            if (data && data.length > 0) {
+                const cache: Record<string, Exercise[]> = {};
+                const names = (data as Pick<UserPlan, 'plan_name' | 'exercises'>[]).map(r => {
+                    cache[r.plan_name] = r.exercises as Exercise[];
+                    return r.plan_name;
+                });
+                setAllPlansData(cache);
+                setPlans(names);
+                const initPlan = (todayPlan && names.includes(todayPlan)) ? todayPlan : names[0];
+                setCurrentPlanName(initPlan);
+                setExercises(cache[initPlan] ?? []);
+            } else {
+                // First login: migrate localStorage → Supabase
+                const rows = guestPlans.map(plan_name => ({
+                    user_id: user.id,
+                    plan_name,
+                    exercises: guestCache[plan_name],
+                }));
+                await supabase.from('user_plans').upsert(rows, { onConflict: 'user_id,plan_name' });
+                setAllPlansData(guestCache);
+                setPlans(guestPlans);
+                const initPlan = (todayPlan && guestPlans.includes(todayPlan)) ? todayPlan : guestPlans[0];
+                setCurrentPlanName(initPlan);
+                setExercises(guestCache[initPlan] ?? []);
+            }
+            setPlansLoaded(true);
+        }
+        loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
+
+    // ─── Debounced auto-save exercises for current plan ──────────────────────
     React.useEffect(() => {
-        savePlanExercises(currentPlanName, exercises);
-    }, [exercises, currentPlanName]);
+        if (!plansLoaded) return;
+        if (!user) {
+            savePlanExercises(currentPlanName, exercises);
+            return;
+        }
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => {
+            supabase.from('user_plans')
+                .upsert({ user_id: user.id, plan_name: currentPlanName, exercises }, { onConflict: 'user_id,plan_name' });
+            setAllPlansData(prev => ({ ...prev, [currentPlanName]: exercises }));
+        }, 600);
+        return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [exercises, currentPlanName, plansLoaded]);
 
     // Remaining UI state
     const [showSummary, setShowSummary] = useState(false);
@@ -108,7 +160,6 @@ export default function WorkoutLog() {
     const [addTab, setAddTab] = useState<'existing' | 'new'>('existing');
     const [newExerciseName, setNewExerciseName] = useState('');
     const [newExerciseGroup, setNewExerciseGroup] = useState('胸');
-    const { user, isPremium } = useUser();
     const [saving, setSaving] = useState(false);
     const [renamingPlan, setRenamingPlan] = useState<string | null>(null);
     const [renameValue, setRenameValue] = useState('');
@@ -119,17 +170,11 @@ export default function WorkoutLog() {
 
     // All exercises in all plans (for picker)
     const allKnownExercises: Exercise[] = React.useMemo(() => {
-        try {
-            const raw = localStorage.getItem(STORAGE_EXERCISES_KEY);
-            const map: Record<string, Exercise[]> = raw ? JSON.parse(raw) : {};
-            const all = Object.values(DEFAULT_PLAN_EXERCISES).flat();
-            Object.values(map).forEach(exs => all.push(...exs));
-            // Deduplicate by name
-            const seen = new Set<string>();
-            return all.filter(e => { if (seen.has(e.name)) return false; seen.add(e.name); return true; });
-        } catch { return Object.values(DEFAULT_PLAN_EXERCISES).flat(); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showAddModal]);
+        const all = Object.values(DEFAULT_PLAN_EXERCISES).flat();
+        Object.values(allPlansData).forEach(exs => all.push(...exs));
+        const seen = new Set<string>();
+        return all.filter(e => { if (seen.has(e.name)) return false; seen.add(e.name); return true; });
+    }, [allPlansData, showAddModal]);
 
     const handleWorkComplete = (duration: number) => {
         let updatedExercises = [...exercises];
@@ -158,22 +203,35 @@ export default function WorkoutLog() {
     };
 
     const switchPlan = (plan: string) => {
-        // Save current plan before switching
-        savePlanExercises(currentPlanName, exercises);
+        // Cache current exercises before switching
+        setAllPlansData(prev => ({ ...prev, [currentPlanName]: exercises }));
+        if (!user) savePlanExercises(currentPlanName, exercises);
         setCurrentPlanName(plan);
-        setExercises(loadPlanExercises(plan));
+        setExercises(allPlansData[plan] ?? DEFAULT_PLAN_EXERCISES[plan] ?? []);
         setCurrentExIdx(0);
         setCurrentSetIdx(0);
         setShowPlanMenu(false);
         setRenamingPlan(null);
     };
 
-    const handleRename = (oldName: string) => {
+    const handleRename = async (oldName: string) => {
         if (!renameValue.trim()) { setRenamingPlan(null); return; }
         const newName = renameValue.trim();
-        // Migrate stored exercises to new name
-        const savedExs = loadPlanExercises(oldName);
-        savePlanExercises(newName, savedExs);
+        const savedExs = allPlansData[oldName] ?? (oldName === currentPlanName ? exercises : []);
+        if (user) {
+            await supabase.from('user_plans').upsert(
+                { user_id: user.id, plan_name: newName, exercises: savedExs },
+                { onConflict: 'user_id,plan_name' }
+            );
+            await supabase.from('user_plans').delete().eq('user_id', user.id).eq('plan_name', oldName);
+        } else {
+            savePlanExercises(newName, savedExs);
+        }
+        setAllPlansData(prev => {
+            const next = { ...prev, [newName]: savedExs };
+            delete next[oldName];
+            return next;
+        });
         setPlans(prev => prev.map(p => p === oldName ? newName : p));
         if (currentPlanName === oldName) setCurrentPlanName(newName);
         setRenamingPlan(null);
@@ -182,11 +240,19 @@ export default function WorkoutLog() {
 
     function handleDeletePlan(plan: string) {
         const updated = plans.filter(p => p !== plan);
+        if (user) {
+            supabase.from('user_plans').delete().eq('user_id', user.id).eq('plan_name', plan);
+        }
+        setAllPlansData(prev => {
+            const next = { ...prev };
+            delete next[plan];
+            return next;
+        });
         setPlans(updated);
         if (currentPlanName === plan) {
             const next = updated[0] || '預設計畫';
             setCurrentPlanName(next);
-            setExercises(loadPlanExercises(next));
+            setExercises(allPlansData[next] ?? DEFAULT_PLAN_EXERCISES[next] ?? []);
         }
         setDeletingPlan(null);
     }
@@ -372,8 +438,15 @@ export default function WorkoutLog() {
                                 ))}
                                 <button
                                     className="w-full px-5 py-4 flex items-center gap-3 text-purple-400 font-bold hover:bg-purple-500/10 transition-colors"
-                                    onClick={() => {
+                                    onClick={async () => {
                                         const name = `自訂計畫 ${plans.length + 1}`;
+                                        if (user) {
+                                            await supabase.from('user_plans').upsert(
+                                                { user_id: user.id, plan_name: name, exercises: [] },
+                                                { onConflict: 'user_id,plan_name' }
+                                            );
+                                        }
+                                        setAllPlansData(prev => ({ ...prev, [name]: [] }));
                                         setPlans(prev => [...prev, name]);
                                         setRenamingPlan(name);
                                         setRenameValue(name);

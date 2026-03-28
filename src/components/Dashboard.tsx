@@ -107,25 +107,56 @@ export default function Dashboard() {
 
     useEffect(() => { loadStats(); }, [loadStats]);
 
-    // ── Schedule (localStorage) ───────────────────────────────────────────────
+    // ── Schedule & plans (Supabase for logged-in, localStorage for guest) ────
     useEffect(() => {
-        try {
-            const saved = localStorage.getItem('tf_week_schedule');
-            if (saved) setWeekSchedule(JSON.parse(saved));
-        } catch {}
-        try {
-            const plans = localStorage.getItem('tf_workout_plans');
-            if (plans) {
-                const parsed = JSON.parse(plans) as string[];
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    setAvailablePlans(parsed);
-                    return;
-                }
-            }
-        } catch {}
-        setAvailablePlans(['胸、肩、三頭肌專項', '背、二頭肌專項', '腿部專項', '全身訓練']);
-    }, []);
+        async function loadScheduleAndPlans() {
+            // Always read localStorage as migration source / guest fallback
+            const lsSchedule = (() => {
+                try { const s = localStorage.getItem('tf_week_schedule'); return s ? JSON.parse(s) as (string|null)[] : null; } catch { return null; }
+            })();
+            const lsPlans = (() => {
+                try { const p = localStorage.getItem('tf_workout_plans'); if (p) { const a = JSON.parse(p) as string[]; if (Array.isArray(a) && a.length) return a; } } catch {} return null;
+            })();
+            const DEFAULT_PLANS = ['胸、肩、三頭肌專項', '背、二頭肌專項', '腿部專項', '全身訓練'];
 
+            if (!user) {
+                if (lsSchedule) setWeekSchedule(lsSchedule);
+                setAvailablePlans(lsPlans ?? DEFAULT_PLANS);
+                return;
+            }
+
+            // Logged-in: load from Supabase in parallel
+            const [schedRes, plansRes] = await Promise.all([
+                supabase.from('week_schedules').select('day_of_week, plan_name').eq('user_id', user.id),
+                supabase.from('user_plans').select('plan_name').eq('user_id', user.id).order('created_at'),
+            ]);
+
+            // Week schedule
+            if (schedRes.data && schedRes.data.length > 0) {
+                const sched = Array(7).fill(null) as (string|null)[];
+                schedRes.data.forEach(r => { sched[r.day_of_week] = r.plan_name; });
+                setWeekSchedule(sched);
+            } else if (lsSchedule) {
+                // First login: migrate localStorage schedule
+                const rows = lsSchedule
+                    .map((plan_name, day_of_week) => plan_name ? { user_id: user.id, day_of_week, plan_name } : null)
+                    .filter(Boolean) as { user_id: string; day_of_week: number; plan_name: string }[];
+                if (rows.length) await supabase.from('week_schedules').upsert(rows, { onConflict: 'user_id,day_of_week' });
+                setWeekSchedule(lsSchedule);
+            }
+
+            // Available plans
+            if (plansRes.data && plansRes.data.length > 0) {
+                setAvailablePlans(plansRes.data.map(p => p.plan_name as string));
+            } else {
+                setAvailablePlans(lsPlans ?? DEFAULT_PLANS);
+            }
+        }
+
+        loadScheduleAndPlans();
+    }, [user]); // re-run on login/logout
+
+    // Keep tf_today_plan in sync (used by WorkoutLog to pre-select today's plan)
     useEffect(() => {
         const todayPlan = weekSchedule[todayIdx];
         if (todayPlan) localStorage.setItem('tf_today_plan', todayPlan);
@@ -314,7 +345,14 @@ export default function Dashboard() {
                                             const next = [...weekSchedule];
                                             next[i] = e.target.value || null;
                                             setWeekSchedule(next);
-                                            localStorage.setItem('tf_week_schedule', JSON.stringify(next));
+                                            if (user) {
+                                                supabase.from('week_schedules').upsert(
+                                                    { user_id: user.id, day_of_week: i, plan_name: e.target.value || null },
+                                                    { onConflict: 'user_id,day_of_week' }
+                                                );
+                                            } else {
+                                                localStorage.setItem('tf_week_schedule', JSON.stringify(next));
+                                            }
                                         }}
                                         className="flex-1 bg-zinc-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-200 outline-none focus:border-purple-500/50 transition-colors appearance-none"
                                     >

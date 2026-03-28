@@ -114,6 +114,21 @@ export interface Invitation {
   created_at: string;
 }
 
+export interface UserPlan {
+  id: number;
+  user_id: string;
+  plan_name: string;
+  exercises: any[]; // Exercise[] — typed in WorkoutLog component
+  created_at: string;
+}
+
+export interface WeekSchedule {
+  id: number;
+  user_id: string;
+  day_of_week: number; // 0=Mon … 6=Sun (Dashboard convention)
+  plan_name: string | null;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper — today as YYYY-MM-DD in local time
 // ─────────────────────────────────────────────────────────────────────────────
