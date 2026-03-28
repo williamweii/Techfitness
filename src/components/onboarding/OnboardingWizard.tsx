@@ -77,6 +77,7 @@ export default function OnboardingWizard() {
   const [answers, setAnswers] = useState<Answers>({});
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const visibleSteps = STEPS.filter(s => !s.skipIf || !s.skipIf(answers));
   const currentStep = visibleSteps[stepIndex];
@@ -100,17 +101,31 @@ export default function OnboardingWizard() {
 
   const save = async () => {
     setSaving(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { router.push('/'); return; }
-    await supabase.from('fitness_profiles').update({
-      role: answers.role === 'coach' ? 'coach' : 'client',
-      goal: answers.goal || null,
-      weekly_frequency: answers.weekly_frequency || null,
-      diet_mode: answers.diet_mode || null,
-      coach_type: answers.coach_type || null,
-      onboarding_completed: true,
-    }).eq('id', session.user.id);
-    router.push(answers.role === 'coach' ? '/coach' : '/workout');
+    setSaveError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { router.push('/'); return; }
+
+      const updatePromise = supabase.from('fitness_profiles').update({
+        role: answers.role === 'coach' ? 'coach' : 'client',
+        goal: answers.goal || null,
+        weekly_frequency: answers.weekly_frequency || null,
+        diet_mode: answers.diet_mode || null,
+        coach_type: answers.coach_type || null,
+        onboarding_completed: true,
+      }).eq('id', session.user.id);
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('儲存逾時，請稍後再試')), 5000)
+      );
+
+      await Promise.race([updatePromise, timeoutPromise]);
+      router.push(answers.role === 'coach' ? '/coach' : '/workout');
+    } catch (err) {
+      console.error('Onboarding save error:', err);
+      setSaving(false);
+      setSaveError(err instanceof Error ? err.message : '儲存失敗，請稍後再試');
+    }
   };
 
   if (!currentStep) return null;
@@ -188,6 +203,13 @@ export default function OnboardingWizard() {
                 );
               })}
             </div>
+
+            {/* Error message */}
+            {saveError && (
+              <div className="mb-3 px-4 py-3 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 text-sm text-center">
+                {saveError}
+              </div>
+            )}
 
             {/* Nav buttons */}
             <div className="flex gap-3">

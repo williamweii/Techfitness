@@ -33,7 +33,15 @@ export default function Dashboard() {
     const { user } = useUser();
     const todayIdx = (new Date().getDay() + 6) % 7;
     const [selectedDay, setSelectedDay] = useState(todayIdx);
-    const [weekSchedule, setWeekSchedule] = useState<(string | null)[]>(Array(7).fill(null));
+    // ── Lazy init: render localStorage immediately (no flash of empty state) ──
+    const [weekSchedule, setWeekSchedule] = useState<(string | null)[]>(() => {
+        if (typeof window === 'undefined') return Array(7).fill(null);
+        try {
+            const s = localStorage.getItem('tf_week_schedule');
+            if (s) return JSON.parse(s) as (string | null)[];
+        } catch { /* noop */ }
+        return Array(7).fill(null);
+    });
     const [showScheduleEditor, setShowScheduleEditor] = useState(false);
     const [availablePlans, setAvailablePlans] = useState<string[]>([]);
 
@@ -109,48 +117,51 @@ export default function Dashboard() {
     useEffect(() => { loadStats(); }, [loadStats]);
 
     // ── Schedule & plans (Supabase for logged-in, localStorage for guest) ────
+    // Strategy: useState already loaded localStorage synchronously (no flash).
+    // This effect only runs background Supabase sync and overwrites ONLY if Supabase has data.
     useEffect(() => {
-        async function loadScheduleAndPlans() {
-            // Always read localStorage as migration source / guest fallback
+        const lsPlans = (() => {
+            try { const p = localStorage.getItem('tf_workout_plans'); if (p) { const a = JSON.parse(p) as string[]; if (Array.isArray(a) && a.length) return a; } } catch {} return null;
+        })();
+        const DEFAULT_PLANS = ['胸、肩、三頭肌專項', '背、二頭肌專項', '腿部專項', '全身訓練'];
+
+        if (!user) {
+            // Guest: plans from localStorage only; schedule already in state from lazy init
+            setAvailablePlans(lsPlans ?? DEFAULT_PLANS);
+            return;
+        }
+
+        // Logged-in: background sync — never clear state, only overwrite when Supabase has data
+        async function syncFromSupabase() {
             const lsSchedule = (() => {
                 try { const s = localStorage.getItem('tf_week_schedule'); return s ? JSON.parse(s) as (string|null)[] : null; } catch { return null; }
             })();
-            const lsPlans = (() => {
-                try { const p = localStorage.getItem('tf_workout_plans'); if (p) { const a = JSON.parse(p) as string[]; if (Array.isArray(a) && a.length) return a; } } catch {} return null;
-            })();
-            const DEFAULT_PLANS = ['胸、肩、三頭肌專項', '背、二頭肌專項', '腿部專項', '全身訓練'];
 
-            if (!user) {
-                if (lsSchedule) setWeekSchedule(lsSchedule);
-                setAvailablePlans(lsPlans ?? DEFAULT_PLANS);
-                return;
-            }
-
-            // Logged-in: load from Supabase in parallel
             const [schedRes, plansRes] = await Promise.all([
-                supabase.from('week_schedules').select('day_of_week, plan_name').eq('user_id', user.id),
-                supabase.from('user_plans').select('plan_name').eq('user_id', user.id).order('created_at'),
+                supabase.from('week_schedules').select('day_of_week, plan_name').eq('user_id', user!.id),
+                supabase.from('user_plans').select('plan_name').eq('user_id', user!.id).order('created_at'),
             ]);
 
-            // Week schedule
+            // ── Week schedule ──────────────────────────────────────────────────
             if (schedRes.data && schedRes.data.length > 0) {
+                // Supabase has data → overwrite state + refresh localStorage cache
                 const sched = Array(7).fill(null) as (string|null)[];
                 schedRes.data.forEach(r => { sched[r.day_of_week] = r.plan_name; });
                 setWeekSchedule(sched);
-                // Sync to localStorage so navigation back has a warm cache
                 try { localStorage.setItem('tf_week_schedule', JSON.stringify(sched)); } catch { /* noop */ }
             } else if (lsSchedule) {
-                // No Supabase data — migrate from localStorage (first login or Supabase write failed)
+                // Supabase empty but localStorage has data → migrate to Supabase (don't touch state)
                 const rows = lsSchedule
-                    .map((plan_name, day_of_week) => plan_name ? { user_id: user.id, day_of_week, plan_name } : null)
+                    .map((plan_name, day_of_week) => plan_name ? { user_id: user!.id, day_of_week, plan_name } : null)
                     .filter(Boolean) as { user_id: string; day_of_week: number; plan_name: string }[];
-                if (rows.length) await supabase.from('week_schedules').upsert(rows, { onConflict: 'user_id,day_of_week' });
-                setWeekSchedule(lsSchedule);
-                // Note: lsSchedule here is the warm cache written by onChange, so this acts as a
-                // reliable fallback even if the original Supabase upsert was fire-and-forget.
+                if (rows.length) {
+                    await supabase.from('week_schedules').upsert(rows, { onConflict: 'user_id,day_of_week' });
+                }
+                // State is already correct from lazy init — no setWeekSchedule needed
             }
+            // If both Supabase and localStorage are empty → leave state as Array(7).fill(null)
 
-            // Available plans
+            // ── Available plans ────────────────────────────────────────────────
             if (plansRes.data && plansRes.data.length > 0) {
                 setAvailablePlans(plansRes.data.map(p => p.plan_name as string));
             } else {
@@ -158,7 +169,7 @@ export default function Dashboard() {
             }
         }
 
-        loadScheduleAndPlans();
+        syncFromSupabase();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.id]); // re-run only when user actually changes (not on TOKEN_REFRESHED)
 
