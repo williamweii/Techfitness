@@ -164,6 +164,9 @@ export default function WorkoutLog() {
     const [renamingPlan, setRenamingPlan] = useState<string | null>(null);
     const [renameValue, setRenameValue] = useState('');
     const [deletingPlan, setDeletingPlan] = useState<string | null>(null);
+    const [renamingExercise, setRenamingExercise] = useState<string | null>(null); // exercise id
+    const [renameExerciseValue, setRenameExerciseValue] = useState('');
+    const [deletingExercise, setDeletingExercise] = useState<string | null>(null); // exercise id
 
     // Constants and derived state
     const customCount = exercises.filter(e => parseInt(e.id) > 100).length;
@@ -256,6 +259,20 @@ export default function WorkoutLog() {
         }
         setDeletingPlan(null);
     }
+
+    const handleRenameExercise = (exId: string) => {
+        if (!renameExerciseValue.trim()) { setRenamingExercise(null); return; }
+        setExercises(prev => prev.map(ex =>
+            ex.id === exId ? { ...ex, name: renameExerciseValue.trim() } : ex
+        ));
+        setRenamingExercise(null);
+        setRenameExerciseValue('');
+    };
+
+    const handleDeleteExercise = (exId: string) => {
+        setExercises(prev => prev.filter(ex => ex.id !== exId));
+        setDeletingExercise(null);
+    };
 
     const toggleSet = (exId: string, setId: string) => {
         setExercises(prev => prev.map(ex => {
@@ -474,14 +491,49 @@ export default function WorkoutLog() {
                 {exercises.map((ex, exIndex) => (
                     <div key={ex.id} className={`${styles.exerciseCard} card`}>
                         <div className={styles.exerciseHeader}>
-                            <div className={styles.titleGroup}>
-                                <span className={styles.exerciseGroup}>{ex.group}</span>
-                                <h3>{ex.name}</h3>
-                            </div>
-                            <div className={styles.headerActions}>
-                                <History size={18} className={styles.historyIcon} />
-                                <ChevronDown size={20} />
-                            </div>
+                            {deletingExercise === ex.id ? (
+                                /* ── Delete confirm ── */
+                                <div className="flex-1 flex items-center gap-2">
+                                    <span className="flex-1 text-sm text-zinc-300">確定刪除「{ex.name}」？</span>
+                                    <button onClick={() => handleDeleteExercise(ex.id)} className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-xl font-bold">刪除</button>
+                                    <button onClick={() => setDeletingExercise(null)} className="px-3 py-1.5 bg-zinc-700 text-zinc-300 text-xs rounded-xl">取消</button>
+                                </div>
+                            ) : renamingExercise === ex.id ? (
+                                /* ── Rename inline ── */
+                                <div className="flex-1 flex items-center gap-2">
+                                    <input
+                                        autoFocus
+                                        className="flex-1 bg-zinc-800 border border-purple-500/50 text-white px-3 py-1.5 rounded-xl text-sm outline-none"
+                                        value={renameExerciseValue}
+                                        onChange={e => setRenameExerciseValue(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') handleRenameExercise(ex.id); if (e.key === 'Escape') setRenamingExercise(null); }}
+                                        placeholder="動作名稱"
+                                    />
+                                    <button onClick={() => handleRenameExercise(ex.id)} className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-xl font-bold">儲存</button>
+                                    <button onClick={() => setRenamingExercise(null)} className="px-3 py-1.5 bg-zinc-700 text-zinc-300 text-xs rounded-xl">取消</button>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className={styles.titleGroup}>
+                                        <span className={styles.exerciseGroup}>{ex.group}</span>
+                                        <h3>{ex.name}</h3>
+                                    </div>
+                                    <div className={styles.headerActions}>
+                                        <button
+                                            onClick={() => { setRenamingExercise(ex.id); setRenameExerciseValue(ex.name); }}
+                                            className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
+                                            title="重新命名"
+                                        >✏️</button>
+                                        <button
+                                            onClick={() => setDeletingExercise(ex.id)}
+                                            className="p-1.5 text-zinc-600 hover:text-red-400 transition-colors"
+                                            title="刪除動作"
+                                        >🗑️</button>
+                                        <History size={18} className={styles.historyIcon} />
+                                        <ChevronDown size={20} />
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <div className={styles.setsHeader}>

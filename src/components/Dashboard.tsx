@@ -137,13 +137,17 @@ export default function Dashboard() {
                 const sched = Array(7).fill(null) as (string|null)[];
                 schedRes.data.forEach(r => { sched[r.day_of_week] = r.plan_name; });
                 setWeekSchedule(sched);
+                // Sync to localStorage so navigation back has a warm cache
+                try { localStorage.setItem('tf_week_schedule', JSON.stringify(sched)); } catch { /* noop */ }
             } else if (lsSchedule) {
-                // First login: migrate localStorage schedule
+                // No Supabase data — migrate from localStorage (first login or Supabase write failed)
                 const rows = lsSchedule
                     .map((plan_name, day_of_week) => plan_name ? { user_id: user.id, day_of_week, plan_name } : null)
                     .filter(Boolean) as { user_id: string; day_of_week: number; plan_name: string }[];
                 if (rows.length) await supabase.from('week_schedules').upsert(rows, { onConflict: 'user_id,day_of_week' });
                 setWeekSchedule(lsSchedule);
+                // Note: lsSchedule here is the warm cache written by onChange, so this acts as a
+                // reliable fallback even if the original Supabase upsert was fire-and-forget.
             }
 
             // Available plans
@@ -347,13 +351,13 @@ export default function Dashboard() {
                                             const next = [...weekSchedule];
                                             next[i] = e.target.value || null;
                                             setWeekSchedule(next);
+                                            // Always write local cache so navigation back survives
+                                            try { localStorage.setItem('tf_week_schedule', JSON.stringify(next)); } catch { /* noop */ }
                                             if (user) {
                                                 supabase.from('week_schedules').upsert(
                                                     { user_id: user.id, day_of_week: i, plan_name: e.target.value || null },
                                                     { onConflict: 'user_id,day_of_week' }
                                                 );
-                                            } else {
-                                                localStorage.setItem('tf_week_schedule', JSON.stringify(next));
                                             }
                                         }}
                                         className="flex-1 bg-zinc-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-200 outline-none focus:border-purple-500/50 transition-colors appearance-none"
