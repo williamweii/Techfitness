@@ -1,70 +1,40 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, type FitnessProfile } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
+import { useUser } from '@/hooks/useUser';
 import Link from 'next/link';
 import { LogIn, UserCog, Dumbbell } from 'lucide-react';
 
 export default function AuthHeader() {
   const router = useRouter();
-  const [session, setSession] = useState<any>(null);
-  const [profile, setProfile] = useState<FitnessProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, profile, loading } = useUser();
 
+  // Narrow subscription: only for post-OAuth redirect.
+  // SIGNED_IN fires only on fresh login (not on INITIAL_SESSION / page reload),
+  // so this never triggers on normal navigation — only after Google OAuth completes.
   useEffect(() => {
-    // Hard timeout: never stay in loading state more than 2s
-    const fallbackTimer = setTimeout(() => setLoading(false), 2000);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event !== 'SIGNED_IN') return;
+      if (window.location.pathname !== '/') return;
+      if (!session) return;
 
-    // Restore existing session silently – NO redirect on normal page load
-    const restore = async () => {
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
-        if (!currentSession) { return; }
+      // Load fresh profile to check onboarding status
+      const { data } = await supabase
+        .from('fitness_profiles')
+        .select('onboarding_completed, role')
+        .eq('id', session.user.id)
+        .single();
 
-        const { data } = await supabase
-          .from('fitness_profiles')
-          .select('*')
-          .eq('id', currentSession.user.id)
-          .single();
-        if (data) setProfile(data);
-      } catch {
-        // Network error or Supabase unreachable — still show the UI
-      } finally {
-        clearTimeout(fallbackTimer);
-        setLoading(false);
-      }
-    };
-
-    restore();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      if (event === 'SIGNED_IN') {
-        setSession(newSession);
-        if (!newSession) return;
-        const { data } = await supabase
-          .from('fitness_profiles')
-          .select('*')
-          .eq('id', newSession.user.id)
-          .single();
-        if (data) setProfile(data);
-        setLoading(false);
-        // Only redirect right after OAuth login
-        if (window.location.pathname === '/') {
-          const needsOnboarding = !data?.onboarding_completed;
-          if (needsOnboarding) { router.push('/onboarding'); return; }
-          const isCoach = data?.role === 'coach' || data?.role === 'admin';
-          router.push(isCoach ? '/coach' : '/workout');
-        }
-      }
-      if (event === 'SIGNED_OUT') {
-        setSession(null);
-        setProfile(null);
-        setLoading(false);
+      if (!data?.onboarding_completed) {
+        router.push('/onboarding');
+      } else {
+        const isCoach = data?.role === 'coach' || data?.role === 'admin';
+        router.push(isCoach ? '/coach' : '/workout');
       }
     });
-    return () => { clearTimeout(fallbackTimer); subscription.unsubscribe(); };
+    return () => subscription.unsubscribe();
   }, [router]);
 
   const handleSignIn = async () => {
@@ -76,13 +46,12 @@ export default function AuthHeader() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setSession(null);
-    setProfile(null);
+    router.push('/');
   };
 
   if (loading) return null;
 
-  if (!session) {
+  if (!user) {
     return (
       <button
         onClick={handleSignIn}
@@ -93,8 +62,8 @@ export default function AuthHeader() {
     );
   }
 
-  const userEmail = profile?.email || session.user.email;
-  const userName = profile?.name || session.user.user_metadata?.name || userEmail;
+  const userEmail = profile?.email || user.email;
+  const userName = profile?.name || user.user_metadata?.name || userEmail;
   const isCoach = profile?.role === 'coach' || profile?.role === 'admin';
   const dashboardHref = isCoach ? '/coach' : '/workout';
   const dashboardLabel = isCoach ? '教練後台' : '我的訓練';

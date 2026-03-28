@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { UserProvider } from "@/lib/UserContext";
 import { WorkoutSessionProvider } from "@/lib/WorkoutSessionContext";
 import GlobalTimer from "@/components/workout/GlobalTimer";
 import AICoachChat from "@/components/coach/AICoachChat";
@@ -18,12 +19,14 @@ export default function RootLayout({
   return (
     <html lang="zh-TW">
       <body>
-        <WorkoutSessionProvider>
-          <main>{children}</main>
-          <Navbar />
-          <GlobalTimer />
-          <AICoachChat />
-        </WorkoutSessionProvider>
+        <UserProvider>
+          <WorkoutSessionProvider>
+            <main>{children}</main>
+            <Navbar />
+            <GlobalTimer />
+            <AICoachChat />
+          </WorkoutSessionProvider>
+        </UserProvider>
       </body>
     </html>
   );

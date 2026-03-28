@@ -102,26 +102,41 @@ export default function OnboardingWizard() {
   const save = async () => {
     setSaving(true);
     setSaveError(null);
+
+    // Shared 5-second timeout covers both getSession() and the DB update
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('儲存逾時，請稍後再試')), 5000);
+    });
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { router.push('/'); return; }
+      const { data: { session } } = await Promise.race([
+        supabase.auth.getSession(),
+        timeoutPromise,
+      ]) as Awaited<ReturnType<typeof supabase.auth.getSession>>;
 
-      const updatePromise = supabase.from('fitness_profiles').update({
-        role: answers.role === 'coach' ? 'coach' : 'client',
-        goal: answers.goal || null,
-        weekly_frequency: answers.weekly_frequency || null,
-        diet_mode: answers.diet_mode || null,
-        coach_type: answers.coach_type || null,
-        onboarding_completed: true,
-      }).eq('id', session.user.id);
+      if (!session) {
+        clearTimeout(timeoutId!);
+        router.push('/');
+        return;
+      }
 
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('儲存逾時，請稍後再試')), 5000)
-      );
+      await Promise.race([
+        supabase.from('fitness_profiles').update({
+          role: answers.role === 'coach' ? 'coach' : 'client',
+          goal: answers.goal || null,
+          weekly_frequency: answers.weekly_frequency || null,
+          diet_mode: answers.diet_mode || null,
+          coach_type: answers.coach_type || null,
+          onboarding_completed: true,
+        }).eq('id', session.user.id),
+        timeoutPromise,
+      ]);
 
-      await Promise.race([updatePromise, timeoutPromise]);
+      clearTimeout(timeoutId!);
       router.push(answers.role === 'coach' ? '/coach' : '/workout');
     } catch (err) {
+      clearTimeout(timeoutId!);
       console.error('Onboarding save error:', err);
       setSaving(false);
       setSaveError(err instanceof Error ? err.message : '儲存失敗，請稍後再試');

@@ -1,69 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js';
-import { supabase, FitnessProfile } from '@/lib/supabase';
+/**
+ * useUser — thin re-export of the global UserContext.
+ *
+ * All components continue to import from '@/hooks/useUser' unchanged.
+ * Auth state now comes from the UserProvider in the root layout (singleton),
+ * which means user is NEVER reset to null on page navigation.
+ */
 
-export interface UseUserReturn {
-  user: User | null;
-  profile: FitnessProfile | null;
-  isPremium: boolean;
-  isCoach: boolean;
-  loading: boolean;
-}
+import { useUserFromContext, type UserContextValue } from '@/lib/UserContext';
+
+export type UseUserReturn = UserContextValue;
 
 export function useUser(): UseUserReturn {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<FitnessProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function load(userId: string) {
-      try {
-        const { data } = await supabase
-          .from('fitness_profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
-        if (mounted) setProfile(data ?? null);
-      } catch {
-        // Network error — leave profile null, UI degrades gracefully
-      }
-    }
-
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        if (!mounted) return;
-        const u = session?.user ?? null;
-        setUser(prev => (prev?.id === u?.id ? prev : u));
-        if (u) load(u.id).finally(() => { if (mounted) setLoading(false); });
-        else setLoading(false);
-      })
-      .catch(() => { if (mounted) setLoading(false); }); // Supabase unreachable
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return;
-      const u = session?.user ?? null;
-      // Stabilise the user reference: if the user ID hasn't changed (e.g. TOKEN_REFRESHED),
-      // keep the existing object so downstream [user] effects don't re-fire.
-      setUser(prev => (prev?.id === u?.id ? prev : u));
-      if (u) load(u.id);
-      else setProfile(null);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  return {
-    user,
-    profile,
-    isPremium: profile?.is_premium ?? false,
-    isCoach: profile?.role === 'coach',
-    loading,
-  };
+    return useUserFromContext();
 }
