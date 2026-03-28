@@ -15,17 +15,22 @@ export default function AuthHeader() {
   useEffect(() => {
     // Restore existing session silently – NO redirect on normal page load
     const restore = async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      setSession(currentSession);
-      if (!currentSession) { setLoading(false); return; }
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+        if (!currentSession) { setLoading(false); return; }
 
-      const { data } = await supabase
-        .from('fitness_profiles')
-        .select('*')
-        .eq('id', currentSession.user.id)
-        .single();
-      if (data) setProfile(data);
-      setLoading(false);
+        const { data } = await supabase
+          .from('fitness_profiles')
+          .select('*')
+          .eq('id', currentSession.user.id)
+          .single();
+        if (data) setProfile(data);
+      } catch {
+        // Network error or Supabase unreachable — still show the UI
+      } finally {
+        setLoading(false);
+      }
     };
 
     restore();
