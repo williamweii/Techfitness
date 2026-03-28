@@ -1,68 +1,141 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Activity, Flame, Clock, Plus, ChevronRight, Droplets, Trophy } from 'lucide-react';
+import { Activity, Flame, CheckSquare, Plus, ChevronRight, Trophy } from 'lucide-react';
 import styles from './Dashboard.module.css';
 import WaterTracker from './nutrition/WaterTracker';
 import AuthHeader from './ui/AuthHeader';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, XAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { useUser } from '@/hooks/useUser';
+import { supabase, todayISO, daysAgoISO } from '@/lib/supabase';
 
-const ACTIVITY_DATA = [
-    { day: 'Mon', kcal: 320 },
-    { day: 'Tue', kcal: 450 },
-    { day: 'Wed', kcal: 280 },
-    { day: 'Thu', kcal: 500 },
-    { day: 'Fri', kcal: 380 },
-    { day: 'Sat', kcal: 600 },
-    { day: 'Sun', kcal: 400 },
-];
-
-const DIET_DATA = [
-    { name: 'Protein', value: 140, color: '#c4856a' },
-    { name: 'Carbs', value: 180, color: '#7a9e8e' },
-    { name: 'Fat', value: 55, color: '#b8a07a' },
-];
-
+// ── Static config ─────────────────────────────────────────────────────────────
 const DAY_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
+const MACRO_COLORS = { protein: '#c4856a', carbs: '#7a9e8e', fat: '#b8a07a' };
+
+function buildLast7(): { date: string; label: string }[] {
+    return Array.from({ length: 7 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - 6 + i);
+        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const label = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
+        return { date: iso, label };
+    });
+}
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+interface ChartDay { day: string; vol: number }
+interface MacroSlice { name: string; value: number; color: string; [key: string]: string | number }
 
 export default function Dashboard() {
-    const todayIdx = (new Date().getDay() + 6) % 7; // 0=Mon..6=Sun
+    const { user } = useUser();
+    const todayIdx = (new Date().getDay() + 6) % 7;
     const [selectedDay, setSelectedDay] = useState(todayIdx);
     const [weekSchedule, setWeekSchedule] = useState<(string | null)[]>(Array(7).fill(null));
     const [showScheduleEditor, setShowScheduleEditor] = useState(false);
     const [availablePlans, setAvailablePlans] = useState<string[]>([]);
 
+    // ── Real data state ───────────────────────────────────────────────────────
+    const [statsLoading, setStatsLoading] = useState(true);
+    const [todayVolume, setTodayVolume] = useState(0);
+    const [todayCalories, setTodayCalories] = useState(0);
+    const [todayCompletedSets, setTodayCompletedSets] = useState(0);
+    const [weeklyActivity, setWeeklyActivity] = useState<ChartDay[]>(() =>
+        buildLast7().map(d => ({ day: d.label, vol: 0 }))
+    );
+    const [todayMacros, setTodayMacros] = useState<MacroSlice[]>([
+        { name: 'Protein', value: 0, color: MACRO_COLORS.protein },
+        { name: 'Carbs',   value: 0, color: MACRO_COLORS.carbs },
+        { name: 'Fat',     value: 0, color: MACRO_COLORS.fat },
+    ]);
+
+    // ── Fetch dashboard stats ─────────────────────────────────────────────────
+    const loadStats = useCallback(async () => {
+        if (!user) { setStatsLoading(false); return; }
+
+        const today = todayISO();
+        const last7 = buildLast7();
+        const weekStart = last7[0].date;
+
+        const [workoutRes, nutritionRes] = await Promise.all([
+            supabase
+                .from('workout_logs')
+                .select('weight, reps, sets, logged_date')
+                .eq('user_id', user.id)
+                .gte('logged_date', weekStart),
+            supabase
+                .from('nutrition_logs')
+                .select('calories, protein, carbs, fat')
+                .eq('user_id', user.id)
+                .eq('logged_date', today),
+        ]);
+
+        // ── Workout stats ──────────────────────────────────────────────────
+        const workoutRows = workoutRes.data ?? [];
+        const todayWorkout = workoutRows.filter(r => r.logged_date === today);
+
+        setTodayVolume(Math.round(
+            todayWorkout.reduce((s, r) => s + r.weight * r.reps * r.sets, 0)
+        ));
+        setTodayCompletedSets(
+            todayWorkout.reduce((s, r) => s + r.sets, 0)
+        );
+
+        // Group by date for weekly chart
+        const volByDate: Record<string, number> = {};
+        workoutRows.forEach(r => {
+            volByDate[r.logged_date] = (volByDate[r.logged_date] ?? 0) + r.weight * r.reps * r.sets;
+        });
+        setWeeklyActivity(last7.map(d => ({
+            day: d.label,
+            vol: Math.round(volByDate[d.date] ?? 0),
+        })));
+
+        // ── Nutrition stats ────────────────────────────────────────────────
+        const nutRows = nutritionRes.data ?? [];
+        setTodayCalories(Math.round(nutRows.reduce((s, r) => s + r.calories, 0)));
+        setTodayMacros([
+            { name: 'Protein', value: Math.round(nutRows.reduce((s, r) => s + r.protein, 0)), color: MACRO_COLORS.protein },
+            { name: 'Carbs',   value: Math.round(nutRows.reduce((s, r) => s + r.carbs, 0)),   color: MACRO_COLORS.carbs },
+            { name: 'Fat',     value: Math.round(nutRows.reduce((s, r) => s + r.fat, 0)),     color: MACRO_COLORS.fat },
+        ]);
+
+        setStatsLoading(false);
+    }, [user]);
+
+    useEffect(() => { loadStats(); }, [loadStats]);
+
+    // ── Schedule (localStorage) ───────────────────────────────────────────────
     useEffect(() => {
-        // Load schedule
         try {
             const saved = localStorage.getItem('tf_week_schedule');
             if (saved) setWeekSchedule(JSON.parse(saved));
         } catch {}
-        // Load available plans (tf_workout_plans is a string[])
         try {
             const plans = localStorage.getItem('tf_workout_plans');
             if (plans) {
                 const parsed = JSON.parse(plans) as string[];
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     setAvailablePlans(parsed);
-                    return; // skip fallback
+                    return;
                 }
             }
         } catch {}
         setAvailablePlans(['胸、肩、三頭肌專項', '背、二頭肌專項', '腿部專項', '全身訓練']);
     }, []);
 
-    // Sync today's plan to localStorage so WorkoutLog picks it up
     useEffect(() => {
         const todayPlan = weekSchedule[todayIdx];
-        if (todayPlan) {
-            localStorage.setItem('tf_today_plan', todayPlan);
-        } else {
-            localStorage.removeItem('tf_today_plan');
-        }
+        if (todayPlan) localStorage.setItem('tf_today_plan', todayPlan);
+        else localStorage.removeItem('tf_today_plan');
     }, [weekSchedule, todayIdx]);
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    const fmt = (n: number) => n > 0 ? n.toLocaleString() : '--';
+    const hasMacros = todayMacros.some(m => m.value > 0);
+
     return (
         <div className={styles.dashboard}>
             <header className={styles.header}>
@@ -78,17 +151,23 @@ export default function Dashboard() {
                 <motion.div whileHover={{ scale: 1.02 }} className={`card ${styles.statCard}`}>
                     <Activity className={styles.statIcon} />
                     <span className={styles.statLabel}>今日訓練量</span>
-                    <span className={styles.statValue}>2,450 kg</span>
+                    <span className={styles.statValue}>
+                        {statsLoading ? '…' : `${fmt(todayVolume)} ${todayVolume > 0 ? 'kg' : ''}`}
+                    </span>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.02 }} className={`card ${styles.statCard}`}>
                     <Flame className={styles.statIcon} style={{ color: '#c4856a' }} />
-                    <span className={styles.statLabel}>消耗熱量</span>
-                    <span className={styles.statValue}>450 kcal</span>
+                    <span className={styles.statLabel}>今日攝取</span>
+                    <span className={styles.statValue}>
+                        {statsLoading ? '…' : `${fmt(todayCalories)} ${todayCalories > 0 ? 'kcal' : ''}`}
+                    </span>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.02 }} className={`card ${styles.statCard}`}>
-                    <Clock className={styles.statIcon} style={{ color: '#7a9e8e' }} />
-                    <span className={styles.statLabel}>運動時間</span>
-                    <span className={styles.statValue}>48 min</span>
+                    <CheckSquare className={styles.statIcon} style={{ color: '#7a9e8e' }} />
+                    <span className={styles.statLabel}>完成組數</span>
+                    <span className={styles.statValue}>
+                        {statsLoading ? '…' : `${fmt(todayCompletedSets)} ${todayCompletedSets > 0 ? '組' : ''}`}
+                    </span>
                 </motion.div>
             </section>
 
@@ -102,49 +181,55 @@ export default function Dashboard() {
                         <h3>營養比例</h3>
                         <Link href="/nutrition"><ChevronRight size={16} /></Link>
                     </div>
-                    <div className={styles.chartContainer}>
-                        <ResponsiveContainer width="100%" height={140}>
-                            <PieChart>
-                                <Pie
-                                    data={DIET_DATA}
-                                    innerRadius={38}
-                                    outerRadius={56}
-                                    paddingAngle={4}
-                                    dataKey="value"
-                                >
-                                    {DIET_DATA.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Pie>
-                                <Tooltip
-                                    contentStyle={{ background: '#1e1e1e', border: 'none', borderRadius: '8px' }}
-                                    itemStyle={{ color: '#fff' }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div className={styles.legend}>
-                            {DIET_DATA.map(item => (
-                                <div key={item.name} className={styles.legendItem}>
-                                    <span className={styles.dot} style={{ background: item.color }} />
-                                    <span className={styles.legendText}>{item.name}</span>
-                                </div>
-                            ))}
+                    {hasMacros ? (
+                        <div className={styles.chartContainer}>
+                            <ResponsiveContainer width="100%" height={140}>
+                                <PieChart>
+                                    <Pie
+                                        data={todayMacros}
+                                        innerRadius={38}
+                                        outerRadius={56}
+                                        paddingAngle={4}
+                                        dataKey="value"
+                                    >
+                                        {todayMacros.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{ background: '#1e1e1e', border: 'none', borderRadius: '8px' }}
+                                        itemStyle={{ color: '#fff' }}
+                                        formatter={(v: number | string | undefined) => [`${v ?? 0}g`]}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            <div className={styles.legend}>
+                                {todayMacros.map(item => (
+                                    <div key={item.name} className={styles.legendItem}>
+                                        <span className={styles.dot} style={{ background: item.color }} />
+                                        <span className={styles.legendText}>{item.name} {item.value}g</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="flex items-center justify-center h-[140px]">
+                            <p className="text-zinc-500 text-xs text-center">今日尚無飲食記錄<br /><Link href="/nutrition" className="text-purple-400">前往記錄</Link></p>
+                        </div>
+                    )}
                 </div>
             </section>
-
 
             {/* Activity Trend */}
             <section className={styles.section}>
                 <div className={styles.sectionHeader}>
-                    <h2>活動趨勢</h2>
+                    <h2>訓練量趨勢（近 7 日）</h2>
                 </div>
                 <div className="card" style={{ height: '250px', padding: '1rem' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={ACTIVITY_DATA}>
+                        <AreaChart data={weeklyActivity}>
                             <defs>
-                                <linearGradient id="colorKcal" x1="0" y1="0" x2="0" y2="1">
+                                <linearGradient id="colorVol" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
                                     <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                                 </linearGradient>
@@ -154,20 +239,21 @@ export default function Dashboard() {
                             <Tooltip
                                 contentStyle={{ background: '#1e1e1e', border: 'none', borderRadius: '8px' }}
                                 cursor={{ stroke: '#ffffff30' }}
+                                formatter={(v: number | string | undefined) => [`${Number(v ?? 0).toLocaleString()} kg`, '訓練量']}
                             />
-                            <Area type="monotone" dataKey="kcal" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorKcal)" strokeWidth={3} />
+                            <Area type="monotone" dataKey="vol" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorVol)" strokeWidth={3} />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
             </section>
 
+            {/* Today's Workout */}
             <section className={styles.section}>
                 <div className={styles.sectionHeader}>
                     <h2>今日訓練清單</h2>
                     <button className={styles.addButton} onClick={() => setShowScheduleEditor(true)}><Plus size={20} /></button>
                 </div>
 
-                {/* Day pills */}
                 <div className="flex gap-1.5 mb-4 overflow-x-auto">
                     {DAY_LABELS.map((d, i) => {
                         const isToday = i === todayIdx;
@@ -191,12 +277,11 @@ export default function Dashboard() {
                     })}
                 </div>
 
-                {/* Today's workout card */}
                 {weekSchedule[selectedDay] ? (
                     <div className={styles.workoutCard}>
                         <div className={styles.workoutInfo}>
                             <h3>{weekSchedule[selectedDay]}</h3>
-                            <p className={styles.workoutMeta}><Clock size={14} /> 60 分鐘 • 12 組</p>
+                            <p className={styles.workoutMeta}>點擊開始今日訓練</p>
                         </div>
                         <Link href="/workout" className={styles.startButton}>開始</Link>
                     </div>
@@ -244,6 +329,7 @@ export default function Dashboard() {
                 </div>
             )}
 
+            {/* Community */}
             <section className={styles.section}>
                 <div className={styles.sectionHeader}>
                     <h2>社群進度</h2>
@@ -253,12 +339,12 @@ export default function Dashboard() {
                     <div className={styles.rankItem}>
                         <Trophy size={16} className="text-yellow-500" />
                         <span className={styles.rankLabel}>目前排名</span>
-                        <span className={styles.rankValue}>#4</span>
+                        <span className={styles.rankValue}>--</span>
                     </div>
                     <div className={styles.rankItem}>
                         <Flame size={16} className="text-orange-500" />
                         <span className={styles.rankLabel}>連續週數</span>
-                        <span className={styles.rankValue}>12 週</span>
+                        <span className={styles.rankValue}>--</span>
                     </div>
                 </div>
             </section>

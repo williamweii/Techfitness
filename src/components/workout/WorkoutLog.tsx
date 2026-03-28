@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ChevronDown, Plus, Trash2, History } from 'lucide-react';
+import { ChevronDown, Plus, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './WorkoutLog.module.css';
 import ActiveTimer from './ActiveTimer';
 import RollingInput from '../ui/RollingInput';
 import GlobalTimer from './GlobalTimer';
+import { useUser } from '@/hooks/useUser';
+import { supabase, WorkoutLogInsert, todayISO } from '@/lib/supabase';
 
 interface ExerciseSet {
     id: string;
@@ -106,7 +108,8 @@ export default function WorkoutLog() {
     const [addTab, setAddTab] = useState<'existing' | 'new'>('existing');
     const [newExerciseName, setNewExerciseName] = useState('');
     const [newExerciseGroup, setNewExerciseGroup] = useState('胸');
-    const [isPremium] = useState(false);
+    const { user, isPremium } = useUser();
+    const [saving, setSaving] = useState(false);
     const [renamingPlan, setRenamingPlan] = useState<string | null>(null);
     const [renameValue, setRenameValue] = useState('');
     const [deletingPlan, setDeletingPlan] = useState<string | null>(null);
@@ -239,6 +242,36 @@ export default function WorkoutLog() {
         setShowAddModal(false);
     };
 
+    const saveWorkoutToSupabase = async () => {
+        if (!user) return;
+        const sessionId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const loggedDate = todayISO();
+
+        const rows: WorkoutLogInsert[] = exercises.flatMap(ex => {
+            const completedSets = ex.sets.filter(s => s.completed);
+            if (completedSets.length === 0) return [];
+            // Use the last completed set's weight/reps as representative values
+            const last = completedSets[completedSets.length - 1];
+            return [{
+                user_id: user.id,
+                exercise_name: ex.name,
+                exercise_group: ex.group,
+                weight: last.weight,
+                reps: last.reps,
+                sets: completedSets.length,
+                session_id: sessionId,
+                note: null,
+                logged_date: loggedDate,
+            }];
+        });
+
+        if (rows.length === 0) return;
+
+        setSaving(true);
+        await supabase.from('workout_logs').insert(rows);
+        setSaving(false);
+    };
+
     const getTotalVolume = () => {
         return exercises.reduce((acc, ex) => {
             return acc + ex.sets.reduce((sAcc, s) => s.completed ? sAcc + (s.weight * s.reps) : sAcc, 0);
@@ -264,8 +297,8 @@ export default function WorkoutLog() {
                     <ChevronDown size={18} className="text-gray-400" />
                 </div>
                 <div className={styles.meta}>
-                    <span>2026年1月21日</span>
-                    <span>下午 4:30</span>
+                    <span>{new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    <span>{new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
             </header>
 
@@ -621,10 +654,14 @@ export default function WorkoutLog() {
                             </div>
 
                             <button
-                                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all"
-                                onClick={() => setShowSummary(false)}
+                                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all disabled:opacity-60"
+                                disabled={saving}
+                                onClick={async () => {
+                                    await saveWorkoutToSupabase();
+                                    setShowSummary(false);
+                                }}
                             >
-                                太棒了！
+                                {saving ? '儲存中…' : '太棒了！'}
                             </button>
                         </motion.div>
                     </motion.div>

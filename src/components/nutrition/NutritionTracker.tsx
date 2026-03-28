@@ -1,31 +1,173 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Search, Info, Lock, Target, Plus, Camera, ScanLine } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Lock, ScanLine } from 'lucide-react';
 import styles from './NutritionPage.module.css';
 import FastingTimer from './FastingTimer';
 import AiScanner from './AiScanner';
 import FoodSearch from './FoodSearch';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
+import { supabase, todayISO, daysAgoISO, type NutritionLog, type MealType } from '@/lib/supabase';
+import { useUser } from '@/hooks/useUser';
+
+// ─── local shape used by UI (superset of DB row) ─────────────────────────────
+interface UILog {
+    id: number | null; // null while optimistically inserting
+    dbId?: number;     // the real DB id once confirmed
+    name: string;
+    meal_type: MealType;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    micronutrients?: Record<string, number>;
+}
+
+const TARGETS = { calories: 2400, protein: 180, carbs: 250, fat: 70 };
+
+const MICRONUTRIENT_TARGETS = {
+    vitA: 900, vitC: 90, vitD: 20,
+    iron: 18, calcium: 1000, magnesium: 400,
+};
+
+function dbRowToUI(row: NutritionLog): UILog {
+    return {
+        id: row.id,
+        dbId: row.id,
+        name: row.food_name ?? '未命名食物',
+        meal_type: row.meal_type as MealType,
+        calories: row.calories,
+        protein: row.protein,
+        carbs: row.carbs,
+        fat: row.fat,
+    };
+}
 
 export default function NutritionTracker() {
+    const { user, isPremium } = useUser();
+
     const [showScanner, setShowScanner] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
-    const [editingFood, setEditingFood] = useState<any>(null);
-    const [isPremium] = useState(false); // Mock premium status
+    const [editingFood, setEditingFood] = useState<UILog | null>(null);
+    const [logs, setLogs] = useState<UILog[]>([]);
+    const [loadingLogs, setLoadingLogs] = useState(true);
+    const [activeTab, setActiveTab] = useState<'log' | 'analytics'>('log');
 
-    // Mock user daily goal
-    const TARGETS = { calories: 2400, protein: 180, carbs: 250, fat: 70 };
+    // Analytics data from DB
+    const [weekCalories, setWeekCalories] = useState<Record<string, number>>({});
 
-    const [logs, setLogs] = useState<any[]>([
-        { id: 99, name: '早餐燕麥', calories: 450, protein: 20, carbs: 80, fat: 12 },
-    ]);
+    // ── Load today's logs ──────────────────────────────────────────────────
+    const loadTodayLogs = useCallback(async () => {
+        if (!user) { setLoadingLogs(false); return; }
+        setLoadingLogs(true);
+        const { data, error } = await supabase
+            .from('nutrition_logs')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('logged_date', todayISO())
+            .order('created_at', { ascending: true });
+        if (!error && data) setLogs(data.map(dbRowToUI));
+        setLoadingLogs(false);
+    }, [user]);
 
-    const MICRONUTRIENT_TARGETS = {
-        vitA: 900, vitC: 90, vitD: 20,
-        iron: 18, calcium: 1000, magnesium: 400
+    // ── Load week analytics ────────────────────────────────────────────────
+    const loadWeekAnalytics = useCallback(async () => {
+        if (!user) return;
+        const { data } = await supabase
+            .from('nutrition_logs')
+            .select('logged_date, calories')
+            .eq('user_id', user.id)
+            .gte('logged_date', daysAgoISO(6))
+            .order('logged_date', { ascending: true });
+        if (data) {
+            const map: Record<string, number> = {};
+            data.forEach(r => {
+                map[r.logged_date] = (map[r.logged_date] ?? 0) + r.calories;
+            });
+            setWeekCalories(map);
+        }
+    }, [user]);
+
+    useEffect(() => { loadTodayLogs(); }, [loadTodayLogs]);
+    useEffect(() => { if (activeTab === 'analytics') loadWeekAnalytics(); }, [activeTab, loadWeekAnalytics]);
+
+    // ── Add / update food (optimistic) ────────────────────────────────────
+    const handleAddFood = async (food: any) => {
+        if (!user) return;
+
+        const mealType: MealType = food.meal_type ?? 'snack';
+        const today = todayISO();
+
+        // Determine if we're updating an existing log
+        const existingLog = editingFood?.dbId
+            ? logs.find(l => l.dbId === editingFood.dbId)
+            : null;
+
+        if (existingLog?.dbId) {
+            // ── UPDATE ─────────────────────────────────────────────────────
+            const updates = {
+                food_name: food.name,
+                calories: food.calories,
+                protein: food.protein,
+                carbs: food.carbs,
+                fat: food.fat,
+                meal_type: mealType,
+            };
+            // Optimistic
+            setLogs(prev => prev.map(l => l.dbId === existingLog.dbId ? { ...l, ...updates, name: food.name } : l));
+            await supabase.from('nutrition_logs').update(updates).eq('id', existingLog.dbId);
+        } else {
+            // ── INSERT ─────────────────────────────────────────────────────
+            const tempId = Date.now();
+            const uiRow: UILog = {
+                id: tempId,
+                name: food.name,
+                meal_type: mealType,
+                calories: food.calories,
+                protein: food.protein,
+                carbs: food.carbs,
+                fat: food.fat,
+                micronutrients: food.micronutrients,
+            };
+            // Optimistic
+            setLogs(prev => [...prev, uiRow]);
+
+            const { data, error } = await supabase.from('nutrition_logs').insert({
+                user_id: user.id,
+                food_name: food.name,
+                calories: food.calories,
+                protein: food.protein,
+                carbs: food.carbs,
+                fat: food.fat,
+                meal_type: mealType,
+                logged_date: today,
+            }).select().single();
+
+            if (error) {
+                // Rollback optimistic update
+                setLogs(prev => prev.filter(l => l.id !== tempId));
+                return;
+            }
+            if (data) {
+                // Replace temp row with real DB id
+                setLogs(prev => prev.map(l => l.id === tempId ? { ...dbRowToUI(data), micronutrients: food.micronutrients } : l));
+            }
+        }
+
+        setShowSearch(false);
+        setShowScanner(false);
+        setEditingFood(null);
     };
 
+    // ── Delete food ────────────────────────────────────────────────────────
+    const handleDeleteFood = async (log: UILog) => {
+        setLogs(prev => prev.filter(l => l.id !== log.id)); // optimistic
+        if (log.dbId) {
+            await supabase.from('nutrition_logs').delete().eq('id', log.dbId);
+        }
+    };
+
+    // ── Computed totals ────────────────────────────────────────────────────
     const totals = logs.reduce((acc, item) => ({
         calories: acc.calories + item.calories,
         protein: acc.protein + item.protein,
@@ -37,25 +179,22 @@ export default function NutritionTracker() {
         iron: acc.iron + (item.micronutrients?.iron || 0),
         calcium: acc.calcium + (item.micronutrients?.calcium || 0),
         magnesium: acc.magnesium + (item.micronutrients?.magnesium || 0),
-    }), {
-        calories: 0, protein: 0, carbs: 0, fat: 0,
-        vitA: 0, vitC: 0, vitD: 0, iron: 0, calcium: 0, magnesium: 0
+    }), { calories: 0, protein: 0, carbs: 0, fat: 0, vitA: 0, vitC: 0, vitD: 0, iron: 0, calcium: 0, magnesium: 0 });
+
+    // ── Build 7-day bar chart data ─────────────────────────────────────────
+    const weekBars = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(); d.setDate(d.getDate() - (6 - i));
+        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const dayLabel = ['日','一','二','三','四','五','六'][d.getDay()];
+        const isToday = i === 6;
+        const cal = isToday ? totals.calories : (weekCalories[iso] ?? 0);
+        return { label: dayLabel, cal, isToday };
     });
 
-    const handleAddFood = (food: any) => {
-        setLogs(prev => {
-            const existing = prev.find(l => l.id === food.id);
-            if (existing) {
-                return prev.map(l => l.id === food.id ? food : l);
-            }
-            return [...prev, { ...food, id: food.id || Date.now() }];
-        });
-        setShowSearch(false);
-        setShowScanner(false);
-        setEditingFood(null);
-    };
-
-    const [activeTab, setActiveTab] = useState<'log' | 'analytics'>('log');
+    const barMax = Math.max(...weekBars.map(b => b.cal), TARGETS.calories);
+    const weekAvg = weekBars.filter(b => b.cal > 0).length > 0
+        ? Math.round(weekBars.reduce((s, b) => s + b.cal, 0) / weekBars.filter(b => b.cal > 0).length)
+        : 0;
 
     return (
         <div className={styles.container}>
@@ -64,7 +203,7 @@ export default function NutritionTracker() {
                 <p>精準掌控宏量營養素，達成您的目標</p>
             </header>
 
-            {/* Top tab bar */}
+            {/* Tab bar */}
             <div className="flex gap-2 px-4 mb-4">
                 {(['log', 'analytics'] as const).map(t => (
                     <button
@@ -83,6 +222,7 @@ export default function NutritionTracker() {
 
             {activeTab === 'log' ? (
                 <>
+                    {/* Macro summary */}
                     <section className={styles.macroSummary}>
                         <div className="card glass">
                             <div className={styles.summaryGrid}>
@@ -98,7 +238,6 @@ export default function NutritionTracker() {
                                     <span className={styles.unit}>kcal</span>
                                 </div>
                             </div>
-
                             <div className={styles.detailBars}>
                                 <MacroBar label="蛋白質" current={totals.protein} target={TARGETS.protein} color="#c026d3" />
                                 <MacroBar label="碳水化合物" current={totals.carbs} target={TARGETS.carbs} color="#7c3aed" />
@@ -107,7 +246,7 @@ export default function NutritionTracker() {
                         </div>
                     </section>
 
-                    {/* Quick Actions */}
+                    {/* Quick actions */}
                     <div className={styles.actionGrid}>
                         <button className={styles.actionBtn} onClick={() => setShowSearch(true)}>
                             <Search size={20} />
@@ -119,28 +258,31 @@ export default function NutritionTracker() {
                         </button>
                     </div>
 
-                    {/* Food Log List */}
+                    {/* Food log */}
                     <div className={styles.foodList}>
                         <h3>今日紀錄</h3>
-                        {logs.length === 0 ? (
+                        {loadingLogs ? (
+                            <p className={styles.emptyText}>載入中…</p>
+                        ) : logs.length === 0 ? (
                             <p className={styles.emptyText}>尚未新增食物</p>
                         ) : (
                             logs.map(log => (
                                 <div
                                     key={log.id}
                                     className={styles.logItem}
-                                    onClick={() => {
-                                        setEditingFood(log);
-                                        setShowSearch(true);
-                                    }}
+                                    onClick={() => { setEditingFood(log); setShowSearch(true); }}
                                     title="點擊修改"
                                 >
                                     <div>
                                         <div className={styles.logName}>{log.name}</div>
-                                        <div className={styles.logSub}>{log.calories} kcal</div>
+                                        <div className={styles.logSub}>{log.calories} kcal · {log.meal_type}</div>
                                     </div>
-                                    <div className={styles.logMacros}>
-                                        P{log.protein} C{log.carbs} F{log.fat}
+                                    <div className="flex items-center gap-3">
+                                        <div className={styles.logMacros}>P{log.protein} C{log.carbs} F{log.fat}</div>
+                                        <button
+                                            onClick={e => { e.stopPropagation(); handleDeleteFood(log); }}
+                                            className="text-zinc-600 hover:text-rose-400 transition-colors text-xs px-2 py-1"
+                                        >✕</button>
                                     </div>
                                 </div>
                             ))
@@ -149,6 +291,7 @@ export default function NutritionTracker() {
 
                     <FastingTimer />
 
+                    {/* Micronutrients */}
                     <section className={styles.premiumSection}>
                         <div className={styles.premiumHeader}>
                             <h3>微量營養素 (維生素、礦物質)</h3>
@@ -176,13 +319,13 @@ export default function NutritionTracker() {
                 /* ── ANALYTICS TAB ── */
                 <div className="px-4 pb-32 flex flex-col gap-6 overflow-x-hidden pt-2">
 
-                    {/* ── Macro Stat Cards ── */}
+                    {/* Macro stat cards */}
                     <div className="grid grid-cols-3 gap-3">
                         {[
-                            { label: '蛋白質', val: totals.protein, target: TARGETS.protein, color: '#c026d3', grad: 'from-purple-600 to-fuchsia-500' },
-                            { label: '碳水', val: totals.carbs, target: TARGETS.carbs, color: '#7c3aed', grad: 'from-violet-600 to-indigo-500' },
-                            { label: '脂肪', val: totals.fat, target: TARGETS.fat, color: '#ec4899', grad: 'from-pink-600 to-rose-500' },
-                        ].map(({ label, val, target, color, grad }) => {
+                            { label: '蛋白質', val: totals.protein, target: TARGETS.protein, color: '#c026d3' },
+                            { label: '碳水', val: totals.carbs, target: TARGETS.carbs, color: '#7c3aed' },
+                            { label: '脂肪', val: totals.fat, target: TARGETS.fat, color: '#ec4899' },
+                        ].map(({ label, val, target, color }) => {
                             const pct = Math.min(Math.round((val / target) * 100), 100);
                             const r = 18, circ = 2 * Math.PI * r;
                             return (
@@ -203,61 +346,51 @@ export default function NutritionTracker() {
                         })}
                     </div>
 
-                    {/* ── Calorie trend ── */}
+                    {/* Calorie trend — real DB data */}
                     <div className="rounded-2xl bg-zinc-800/80 border border-white/12 p-6">
                         <div className="flex justify-between items-baseline mb-4">
                             <h3 className="text-sm font-semibold text-zinc-200">本週熱量趨勢</h3>
-                            <span className="text-[11px] text-zinc-500">均 2,107 kcal</span>
+                            <span className="text-[11px] text-zinc-500">均 {weekAvg.toLocaleString()} kcal</span>
                         </div>
-                        {(() => {
-                            const days = ['一','二','三','四','五','六','日'];
-                            const cals = [2100, 1850, 2300, 1950, 2150, 2400, totals.calories || 450];
-                            const max = Math.max(...cals, 2500);
-                            const target = TARGETS.calories;
-                            return (
-                                <div className="relative">
-                                    {/* Target line */}
-                                    <div className="absolute left-0 right-0 border-t border-dashed border-purple-500/40 pointer-events-none"
-                                        style={{ bottom: `${(target / max) * 100}px` }}>
-                                        <span className="absolute -top-4 right-0 text-[9px] text-purple-400">目標</span>
-                                    </div>
-                                    <div className="flex items-end gap-1.5 h-[100px]">
-                                        {days.map((d, i) => {
-                                            const isToday = i === 6;
-                                            const h = Math.round((cals[i] / max) * 100);
-                                            return (
-                                                <div key={d} className="flex-1 flex flex-col items-center gap-1">
-                                                    <div className="w-full rounded-lg transition-all relative overflow-hidden"
-                                                        style={{ height: `${h}px`, background: isToday ? 'linear-gradient(to top, #c026d3, #7c3aed)' : 'rgba(255,255,255,0.1)' }}>
-                                                        {isToday && <div className="absolute inset-0 bg-white/10 animate-pulse rounded-lg" />}
-                                                    </div>
-                                                    <span className={`text-[9px] font-medium ${isToday ? 'text-purple-400' : 'text-zinc-600'}`}>{d}</span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })()}
+                        <div className="relative">
+                            <div className="absolute left-0 right-0 border-t border-dashed border-purple-500/40 pointer-events-none"
+                                style={{ bottom: `${(TARGETS.calories / barMax) * 100}px` }}>
+                                <span className="absolute -top-4 right-0 text-[9px] text-purple-400">目標</span>
+                            </div>
+                            <div className="flex items-end gap-1.5 h-[100px]">
+                                {weekBars.map(({ label, cal, isToday }) => {
+                                    const h = barMax > 0 ? Math.max(Math.round((cal / barMax) * 100), cal > 0 ? 4 : 0) : 0;
+                                    return (
+                                        <div key={label} className="flex-1 flex flex-col items-center gap-1">
+                                            <div className="w-full rounded-lg transition-all relative overflow-hidden"
+                                                style={{ height: `${h}px`, background: isToday ? 'linear-gradient(to top, #c026d3, #7c3aed)' : 'rgba(255,255,255,0.1)' }}>
+                                                {isToday && <div className="absolute inset-0 bg-white/10 animate-pulse rounded-lg" />}
+                                            </div>
+                                            <span className={`text-[9px] font-medium ${isToday ? 'text-purple-400' : 'text-zinc-600'}`}>{label}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </div>
 
-                    {/* ── Weekly Summary ── */}
+                    {/* Weekly summary — real DB data aggregated */}
                     <div className="rounded-2xl bg-zinc-800/80 border border-white/12 p-6">
                         <h3 className="text-sm font-semibold text-zinc-200 mb-3">本週攝取總結</h3>
                         <div className="space-y-3">
                             {[
-                                { label: '卡路里', avg: 2107, target: TARGETS.calories, unit: 'kcal', color: '#c026d3' },
-                                { label: '蛋白質', avg: 142, target: TARGETS.protein, unit: 'g', color: '#7c3aed' },
-                                { label: '碳水化合物', avg: 220, target: TARGETS.carbs, unit: 'g', color: '#6366f1' },
-                                { label: '脂肪', avg: 58, target: TARGETS.fat, unit: 'g', color: '#ec4899' },
+                                { label: '卡路里', val: totals.calories, target: TARGETS.calories, unit: 'kcal', color: '#c026d3' },
+                                { label: '蛋白質', val: totals.protein, target: TARGETS.protein, unit: 'g', color: '#7c3aed' },
+                                { label: '碳水化合物', val: totals.carbs, target: TARGETS.carbs, unit: 'g', color: '#6366f1' },
+                                { label: '脂肪', val: totals.fat, target: TARGETS.fat, unit: 'g', color: '#ec4899' },
                             ].map(r => {
-                                const rate = Math.min(Math.round((r.avg / r.target) * 100), 100);
-                                const good = rate >= 80 && rate <= 115;
+                                const rate = Math.min(Math.round((r.val / r.target) * 100), 100);
+                                const good = rate >= 70 && rate <= 115;
                                 return (
                                     <div key={r.label} className="flex items-center gap-2 sm:gap-3">
                                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
                                         <div className="flex-1 text-xs text-zinc-300 truncate">{r.label}</div>
-                                        <div className="text-xs text-zinc-500 whitespace-nowrap">{r.avg}{r.unit}</div>
+                                        <div className="text-xs text-zinc-500 whitespace-nowrap">{r.val}{r.unit}</div>
                                         <div className="w-16 sm:w-20 flex-shrink-0">
                                             <div className="h-1.5 rounded-full bg-white/10">
                                                 <div className="h-full rounded-full" style={{ width: `${rate}%`, background: r.color }} />
@@ -270,17 +403,17 @@ export default function NutritionTracker() {
                         </div>
                     </div>
 
-                    {/* ── Diet Performance Score — Premium gated ── */}
+                    {/* Diet performance — Premium gated */}
                     <div className="rounded-2xl border border-white/12 p-6 relative overflow-hidden"
                         style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(236,72,153,0.08))' }}>
                         <div className={!isPremium ? 'blur-sm opacity-40 pointer-events-none select-none' : ''}>
                             <h3 className="text-sm font-semibold text-zinc-200 mb-4">飲食表現評分</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 {[
-                                    { label: '熱量達成率', score: 88, color: '#4ade80' },
-                                    { label: '蛋白質充足度', score: 79, color: '#fbbf24' },
-                                    { label: '飲食多樣性', score: 65, color: '#fbbf24' },
-                                    { label: '三餐規律性', score: 91, color: '#4ade80' },
+                                    { label: '熱量達成率', score: Math.min(Math.round((totals.calories / TARGETS.calories) * 100), 100), color: '#4ade80' },
+                                    { label: '蛋白質充足度', score: Math.min(Math.round((totals.protein / TARGETS.protein) * 100), 100), color: '#fbbf24' },
+                                    { label: '飲食多樣性', score: Math.min(logs.length * 15, 100), color: '#fbbf24' },
+                                    { label: '三餐規律性', score: Math.min([...new Set(logs.map(l => l.meal_type))].length * 30, 100), color: '#4ade80' },
                                 ].map(({ label, score, color }) => {
                                     const r = 22, circ = 2 * Math.PI * r;
                                     return (
@@ -292,7 +425,7 @@ export default function NutritionTracker() {
                                                     strokeLinecap="round" />
                                             </svg>
                                             <div className="text-center -mt-1">
-                                                <div className="font-black text-lg text-white" style={{ color }}>{score}</div>
+                                                <div className="font-black text-lg" style={{ color }}>{score}</div>
                                                 <div className="text-zinc-400 text-[10px] leading-tight">{label}</div>
                                             </div>
                                         </div>
@@ -320,16 +453,10 @@ export default function NutritionTracker() {
             </AnimatePresence>
 
             {showSearch && (
-                <div className={styles.modalOverlay} onClick={() => {
-                    setShowSearch(false);
-                    setEditingFood(null);
-                }}>
+                <div className={styles.modalOverlay} onClick={() => { setShowSearch(false); setEditingFood(null); }}>
                     <div className={styles.searchModal} onClick={e => e.stopPropagation()}>
                         <FoodSearch
-                            onClose={() => {
-                                setShowSearch(false);
-                                setEditingFood(null);
-                            }}
+                            onClose={() => { setShowSearch(false); setEditingFood(null); }}
                             onAddFood={handleAddFood}
                             initialFood={editingFood}
                         />
@@ -349,10 +476,7 @@ function MacroBar({ label, current, target, color, unit = 'g' }: any) {
                 <span className={styles.barValue}>{current}{unit} / {target}{unit}</span>
             </div>
             <div className={styles.track}>
-                <div
-                    className={styles.fill}
-                    style={{ width: `${percent}%`, background: color }}
-                />
+                <div className={styles.fill} style={{ width: `${percent}%`, background: color }} />
             </div>
         </div>
     );

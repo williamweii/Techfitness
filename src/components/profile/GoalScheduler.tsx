@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Lock, Plus, Calendar, X, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, Plus, Calendar, X } from 'lucide-react';
 import styles from './GoalScheduler.module.css';
+import { useUser } from '@/hooks/useUser';
+
+const GOALS_KEY = 'tf_goals';
 
 type Goal = {
     id: string;
@@ -26,17 +29,35 @@ const addDays = (d: Date, days: number) => {
     return newD;
 };
 
-const MOCK_GOALS: Goal[] = [
-    { id: '1', title: '增肌期：高蛋白飲食', startDate: formatDate(today), endDate: formatDate(addDays(today, 5)), type: 'custom' },
-    { id: '2', title: '大重量深蹲週', startDate: formatDate(addDays(today, 2)), endDate: formatDate(addDays(today, 6)), type: 'custom' },
+const INITIAL_GOALS: Goal[] = [
+    { id: 'demo-1', title: '增肌期：高蛋白飲食', startDate: formatDate(today), endDate: formatDate(addDays(today, 5)), type: 'custom' },
+    { id: 'demo-2', title: '大重量深蹲週', startDate: formatDate(addDays(today, 2)), endDate: formatDate(addDays(today, 6)), type: 'custom' },
 ];
 
+function loadGoals(): Goal[] {
+    try {
+        const raw = localStorage.getItem(GOALS_KEY);
+        return raw ? JSON.parse(raw) : INITIAL_GOALS;
+    } catch { return INITIAL_GOALS; }
+}
+
+function saveGoals(goals: Goal[]) {
+    try { localStorage.setItem(GOALS_KEY, JSON.stringify(goals)); } catch { /* noop */ }
+}
+
 export default function GoalScheduler() {
-    const [isPremium, setIsPremium] = useState(false); // Mock toggle
+    const { isPremium } = useUser();
     const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
     const [viewStartDate, setViewStartDate] = useState(new Date());
-    const [goals, setGoals] = useState<Goal[]>(MOCK_GOALS);
+    const [goals, setGoals] = useState<Goal[]>(() =>
+        typeof window !== 'undefined' ? loadGoals() : INITIAL_GOALS
+    );
     const [showPremiumAd, setShowPremiumAd] = useState(false);
+
+    // Persist goals to localStorage on change
+    useEffect(() => {
+        saveGoals(goals);
+    }, [goals]);
 
     // Add Form State
     const [showAddForm, setShowAddForm] = useState(false);
@@ -67,8 +88,6 @@ export default function GoalScheduler() {
         };
     };
 
-    const togglePremium = () => setIsPremium(!isPremium);
-
     const handleAddGoal = () => {
         if (!newTitle && !selectedDefault) return;
 
@@ -91,8 +110,8 @@ export default function GoalScheduler() {
             <div className={styles.header}>
                 <div>
                     <h2 className={styles.title}>目標進度管理</h2>
-                    <p className="text-xs text-gray-400 mt-1 cursor-pointer hover:text-purple-400" onClick={togglePremium}>
-                        {isPremium ? '💎 Premium 會員' : '一般會員 (點擊模擬升級)'}
+                    <p className="text-xs text-gray-400 mt-1">
+                        {isPremium ? '💎 Premium 會員' : '一般會員'}
                     </p>
                 </div>
 
